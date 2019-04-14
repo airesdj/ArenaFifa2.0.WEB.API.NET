@@ -5,7 +5,7 @@ using System.Web;
 using System.Web.Http;
 using System.Web.Routing;
 
-namespace ArenaFifa2._0.API.NET
+namespace ArenaFifa20.API.NET
 {
     public class WebApiApplication : System.Web.HttpApplication
     {

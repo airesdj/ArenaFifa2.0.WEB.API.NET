@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 
-namespace ArenaFifa2._0.API.NET
+namespace ArenaFifa20.API.NET
 {
     public static class WebApiConfig
     {
@@ -19,6 +19,19 @@ namespace ArenaFifa2._0.API.NET
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
+
+            config.Routes.MapHttpRoute(
+                name: "DefaultApiPsnID",
+                routeTemplate: "api/{controller}/{psnID}",
+                defaults: new { psnID = RouteParameter.Optional }
+            );
+
+            config.Routes.MapHttpRoute(
+                name: "DefaultApiWithActionAndPsnID",
+                routeTemplate: "api/{controller}/{action}/{psnID}",
+                defaults: new { psnID = RouteParameter.Optional }
+            );
+
         }
     }
 }
