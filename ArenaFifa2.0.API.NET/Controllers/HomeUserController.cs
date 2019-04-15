@@ -37,7 +37,7 @@ namespace ArenaFifa20.API.NET.Controllers
                     paramValue = new string[] { user.psnID };
                     dt = db.executePROC("spGetUsuarioByLogin", paramName, paramValue);
 
-                    if (dt.Rows.Count>=0)
+                    if (dt.Rows.Count>0)
                     {
 
                         if (user.password != string.Empty)
@@ -118,17 +118,23 @@ namespace ArenaFifa20.API.NET.Controllers
 
                         row = null;
 
-                    }
+                        if (validPasswordLogin == true)
+                        {
+                            userDetails.returnMessage = "loginSuccessfully";
+                            return CreatedAtRoute("DefaultApi", new { id = userDetails.id }, userDetails);
+                        }
+                        else
+                        {
+                            user = new UserLoginModel();
+                            user.returnMessage = "loginFailed";
+                            return CreatedAtRoute("DefaultApi", new { id = 0 }, user);
+                        }
 
-                    if (validPasswordLogin==true)
-                    {
-                        userDetails.returnMessage = "loginSuccessful";
-                        return CreatedAtRoute("DefaultApi", new { id = userDetails.id }, userDetails);
                     }
                     else
                     {
                         user = new UserLoginModel();
-                        user.returnMessage = "loginFailed";
+                        user.returnMessage = "UserNotFound";
                         return CreatedAtRoute("DefaultApi", new { id = 0 }, user);
                     }
 
