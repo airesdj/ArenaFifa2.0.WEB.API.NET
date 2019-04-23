@@ -383,6 +383,52 @@ namespace ArenaFifa20.API.NET.Controllers
                 }
 
             }
+            else if (user.actionUser == "RankingSupporters")
+            {
+                db.openConnection();
+                DataTable dt = null;
+                List<SupportesTeamModel> oList = new List<SupportesTeamModel>();
+                SupportesTeamModel supporters = new SupportesTeamModel();
+                RankingSupportersModel ranking = new RankingSupportersModel();
+
+                try
+                {
+                    paramName = new string[] {  };
+                    paramValue = new string[] {  };
+                    dt = db.executePROC("spGetListRankingSupporters", paramName, paramValue);
+
+                    var rowVal = dt.Rows[0];
+
+                    for (var i = 0; i< dt.Rows.Count; i++)
+                    {
+                        supporters = new SupportesTeamModel();
+                        supporters.teamName = dt.Rows[i]["NM_TIME"].ToString();
+                        supporters.total = Convert.ToInt16(dt.Rows[i]["TOTAL"].ToString());
+                        oList.Add(supporters);
+                    }
+
+                    ranking.dtUpdateFormated = dt.Rows[0]["DT_CADASTRO_FORMATADA"].ToString();
+                    ranking.totalUser = Convert.ToInt16(dt.Rows[0]["TOTAL_USUARIO"].ToString());
+                    ranking.listSupportesTeam = oList;
+                    ranking.returnMessage = "rankingSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new {  }, ranking);
+                }
+                catch (Exception ex)
+                {
+                    user = new UserLoginModel();
+                    user.returnMessage = "errorRankingSupporters_" + ex.Message;
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, user);
+
+                }
+                finally
+                {
+                    db.closeConnection();
+                    oList = null;
+                    supporters = null;
+                    ranking = null;
+                    dt = null;
+                }
+            }
             else
             {
                 return StatusCode(HttpStatusCode.NotAcceptable);

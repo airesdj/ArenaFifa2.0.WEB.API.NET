@@ -88,4 +88,20 @@ namespace ArenaFifa20.API.NET.Models
         public int totalTitlesWon { get; set; }
         public int totalVices { get; set; }
     }
+
+    public class RankingSupportersModel
+    {
+        public List<SupportesTeamModel> listSupportesTeam { get; set; }
+        public string dtUpdateFormated { get; set; }
+        public int totalUser { get; set; }
+        public string actionUser { get; set; }
+        public string returnMessage { get; set; }
+    }
+
+    public class SupportesTeamModel
+    {
+        public string teamName { get; set; }
+        public int total { get; set; }
+    }
+
 }
