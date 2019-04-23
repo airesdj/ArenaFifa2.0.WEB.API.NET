@@ -10,7 +10,31 @@ namespace ArenaFifa20.API.NET.Models
     {
         public int id { get; set; }
         public string psnID { get; set; }
+        public string current_password { get; set; }
         public string password { get; set; }
+        public string confirm_password { get; set; }
+
+        public string name { get; set; }
+        public bool userActive { get; set; }
+        public bool userModerator { get; set; }
+        public string email { get; set; }
+
+        [DataType(DataType.Date)]
+        [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{dd/MM/yyyy}")]
+        public DateTime birthday { get; set; }
+
+        public string state { get; set; }
+        public string howfindus { get; set; }
+        public string whathowfindus { get; set; }
+        public string team { get; set; }
+        public bool inEmailWarning { get; set; }
+        public bool inEmailTeamTable { get; set; }
+        public bool inParticipate { get; set; }
+
+        public string psnRegister { get; set; }
+        public string psnOperation { get; set; }
+        public int idUserOperation { get; set; }
+
         public string actionUser { get; set; }
         public string returnMessage { get; set; }
     }
@@ -60,5 +84,8 @@ namespace ArenaFifa20.API.NET.Models
         public string codeArea { get; set; }
         public string mobileNumber { get; set; }
         public string returnMessage { get; set; }
+        public string currentTeam { get; set; }
+        public int totalTitlesWon { get; set; }
+        public int totalVices { get; set; }
     }
 }
