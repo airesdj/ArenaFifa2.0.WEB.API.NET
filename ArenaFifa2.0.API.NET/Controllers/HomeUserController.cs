@@ -393,6 +393,13 @@ namespace ArenaFifa20.API.NET.Controllers
 
                 try
                 {
+                    paramName = new string[] { };
+                    paramValue = new string[] { };
+                    dt = db.executePROC("spGetDetailsRankingSupporters", paramName, paramValue);
+
+                    ranking.dtUpdateFormated = dt.Rows[0]["DT_CADASTRO_FORMATADA"].ToString();
+                    ranking.totalUser = Convert.ToInt16(dt.Rows[0]["TOTAL_USUARIO"].ToString());
+
                     paramName = new string[] {  };
                     paramValue = new string[] {  };
                     dt = db.executePROC("spGetListRankingSupporters", paramName, paramValue);
@@ -407,8 +414,6 @@ namespace ArenaFifa20.API.NET.Controllers
                         oList.Add(supporters);
                     }
 
-                    ranking.dtUpdateFormated = dt.Rows[0]["DT_CADASTRO_FORMATADA"].ToString();
-                    ranking.totalUser = Convert.ToInt16(dt.Rows[0]["TOTAL_USUARIO"].ToString());
                     ranking.listSupportesTeam = oList;
                     ranking.returnMessage = "rankingSuccessfully";
                     return CreatedAtRoute("DefaultApi", new {  }, ranking);
