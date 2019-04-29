@@ -1,0 +1,22 @@
+USE `arenafifadb`;
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllPontuacaoCampeonato` $$
+CREATE PROCEDURE `spGetAllPontuacaoCampeonato`()
+Begin
+	SELECT *
+	FROM TB_PONTUACAO_CAMPEONATO
+	ORDER BY SG_TIPO_CAMPEONATO;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetPontuacaoCampeonatoByTpCamp` $$
+CREATE PROCEDURE `spGetPontuacaoCampeonatoByTpCamp`(pSgCamp VARCHAR(5))
+Begin
+	SELECT *
+	FROM TB_PONTUACAO_CAMPEONATO
+	WHERE SG_TIPO_CAMPEONATO = pSgCamp;
+End$$
+DELIMITER ;

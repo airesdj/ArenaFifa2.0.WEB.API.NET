@@ -142,6 +142,343 @@ namespace ArenaFifa20.API.NET.Controllers
                         listOfBlackList = null;
                     }
                 }
+                else if (model.actionUser == "renewal")
+                {
+
+                    RenewalChampionshipModel renewalChampionship = new RenewalChampionshipModel();
+                    RenewalViewModel RenewalModel = new RenewalViewModel();
+                    List<RenewalChampionshipModel> listOfRenewal = new List<RenewalChampionshipModel>();
+                    int totAcceptedApproved = 0;
+                    int totUnderAnalysis = 0;
+
+                    int blackListPoints = 0;
+
+                    try
+                    {
+
+                        if (model.seasonID == 0)
+                        {
+                            paramName = new string[] { "pMode" };
+                            paramValue = new string[] { "" };
+                            dt = db.executePROC("spGetIDsTemporadaByMode", paramName, paramValue);
+
+                            model.seasonID = Convert.ToInt32(dt.Rows[0]["id_current_temporada"].ToString());
+                            model.seasonName = dt.Rows[0]["nm_current_temporada"].ToString();
+                            model.previousSeasonID = Convert.ToInt32(dt.Rows[0]["id_previous_temporada"].ToString());
+                            model.previousSeasonName = dt.Rows[0]["nm_previous_temporada"].ToString();
+                        }
+
+                        paramName = new string[] { "pIdTemporada", "pIdTemporadaAnt", "pIdsCampeonato" };
+                        paramValue = new string[] { Convert.ToString(model.seasonID), Convert.ToString(model.previousSeasonID), model.championshipIDRenewal };
+
+                        if (model.renewalMode == "H2H")
+                        {
+                            dt = db.executePROC("spGetAllConfirmacaoTemporadaOfCampeonatoH2H", paramName, paramValue);
+                        }
+                        else if (model.renewalMode == "FUT")
+                        {
+                            dt = db.executePROC("spGetAllConfirmacaoTemporadaOfCampeonatoFUT", paramName, paramValue);
+                        }
+                        else if (model.renewalMode == "PRO")
+                        {
+                            dt = db.executePROC("spGetAllConfirmacaoTemporadaOfCampeonatoPRO", paramName, paramValue);
+                        }
+
+                        for (var i = 0; i < dt.Rows.Count; i++)
+                        {
+
+                            renewalChampionship = new RenewalChampionshipModel();
+                            renewalChampionship.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                            renewalChampionship.userName = dt.Rows[i]["NM_USUARIO"].ToString();
+                            renewalChampionship.userID = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            renewalChampionship.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
+                            renewalChampionship.teamName = dt.Rows[i]["NM_TIME"].ToString();
+
+                            if (String.IsNullOrEmpty(dt.Rows[i]["PT_LSTNEGRA"].ToString()))
+                                blackListPoints = 0;
+                            else
+                                blackListPoints = Convert.ToInt16(dt.Rows[i]["PT_LSTNEGRA"].ToString());
+
+
+                            if (String.IsNullOrEmpty(dt.Rows[i]["IN_CONFIRMACAO"].ToString()))
+                            {
+                                renewalChampionship.actionRenewal = "Ainda não confirmou";
+                                renewalChampionship.acceptedRenewal = "-1";
+                                renewalChampionship.status = "AGUARDANDO";
+                            }
+                            else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 1 && blackListPoints >= model.totalLimitBlackList)
+                            {
+                                renewalChampionship.actionRenewal = "Confirmou, mas chegou ao limite de pontos na Lista Negra";
+                                renewalChampionship.acceptedRenewal = "9";
+                                renewalChampionship.status = "NÃO ACEITO";
+                                totUnderAnalysis += 1;
+                            }
+                            else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 1)
+                            {
+                                renewalChampionship.actionRenewal = "Confirmou Participação";
+                                renewalChampionship.acceptedRenewal = "1";
+                                renewalChampionship.status = "APROVADO";
+                                totAcceptedApproved += 1;
+                            }
+                            else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 0)
+                            {
+                                renewalChampionship.actionRenewal = "Não deseja Participar";
+                                renewalChampionship.acceptedRenewal = "0";
+                                renewalChampionship.status = "DESISTIU";
+                            }
+
+                            renewalChampionship.statusInitials = dt.Rows[i]["DS_STATUS"].ToString();
+
+
+                            if (model.renewalMode == "PRO")
+                                renewalChampionship.playersTotal = Convert.ToInt16(dt.Rows[i]["TOTAL_JOGADORES"].ToString());
+
+                            renewalChampionship.blackListtotal = blackListPoints;
+
+                            if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL"].ToString()))
+                                renewalChampionship.total = 0;
+                            else
+                                renewalChampionship.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+
+                            if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString()))
+                                renewalChampionship.seasonCurrentTotal = 0;
+                            else
+                                renewalChampionship.seasonCurrentTotal = Convert.ToInt16(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
+
+                            renewalChampionship.grandTotal = renewalChampionship.total + renewalChampionship.seasonCurrentTotal;
+
+                            listOfRenewal.Add(renewalChampionship);
+                        }
+
+
+                        //get all of the bench
+                        paramName = new string[] { "pIdTemporada", "pIdTemporadaAnt", "pIdsCampeonato" };
+                        paramValue = new string[] { Convert.ToString(model.seasonID), Convert.ToString(model.previousSeasonID), model.championshipIDBenchRenewal };
+
+                        if (model.renewalMode == "H2H")
+                        {
+                            dt = db.executePROC("spGetAllConfirmacaoTemporadaOfCampeonatoH2HBco", paramName, paramValue);
+                        }
+                        else if (model.renewalMode == "FUT")
+                        {
+                            dt = db.executePROC("spGetAllConfirmacaoTemporadaOfCampeonatoFUTBco", paramName, paramValue);
+                        }
+                        else if (model.renewalMode == "PRO")
+                        {
+                            dt = db.executePROC("spGetAllConfirmacaoTemporadaOfCampeonatoPROBco", paramName, paramValue);
+                        }
+                        for (var i = 0; i < dt.Rows.Count; i++)
+                        {
+
+                            renewalChampionship = new RenewalChampionshipModel();
+                            renewalChampionship.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                            renewalChampionship.userName = dt.Rows[i]["NM_USUARIO"].ToString();
+                            renewalChampionship.userID = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            renewalChampionship.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
+                            renewalChampionship.teamName = dt.Rows[i]["NM_TIME"].ToString();
+
+                            if (String.IsNullOrEmpty(dt.Rows[i]["PT_LSTNEGRA"].ToString()))
+                                blackListPoints = 0;
+                            else
+                                blackListPoints = Convert.ToInt16(dt.Rows[i]["PT_LSTNEGRA"].ToString());
+
+
+                            if (String.IsNullOrEmpty(dt.Rows[i]["IN_CONFIRMACAO"].ToString()))
+                            {
+                                renewalChampionship.actionRenewal = "Ainda não confirmou";
+                                renewalChampionship.acceptedRenewal = "-1";
+                                renewalChampionship.status = "AGUARDANDO";
+                            }
+                            else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 1 && blackListPoints >= model.totalLimitBlackList)
+                            {
+                                renewalChampionship.actionRenewal = "Confirmou, mas chegou ao limite de pontos na Lista Negra";
+                                renewalChampionship.acceptedRenewal = "9";
+                                renewalChampionship.status = "NÃO ACEITO";
+                                totUnderAnalysis += 1;
+                            }
+                            else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 1)
+                            {
+                                renewalChampionship.actionRenewal = "Confirmou Participação";
+                                renewalChampionship.acceptedRenewal = "1";
+                                renewalChampionship.status = "APROVADO";
+                                totAcceptedApproved += 1;
+                            }
+                            else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 0)
+                            {
+                                renewalChampionship.actionRenewal = "Não deseja Participar";
+                                renewalChampionship.acceptedRenewal = "0";
+                                renewalChampionship.status = "DESISTIU";
+                            }
+
+                            renewalChampionship.statusInitials = dt.Rows[i]["DS_STATUS"].ToString();
+
+
+                            if (model.renewalMode == "PRO")
+                                renewalChampionship.playersTotal = Convert.ToInt16(dt.Rows[i]["TOTAL_JOGADORES"].ToString());
+
+                            renewalChampionship.blackListtotal = blackListPoints;
+                            if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL"].ToString()))
+                                renewalChampionship.total = 0;
+                            else
+                                renewalChampionship.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+                            renewalChampionship.seasonCurrentTotal = 0; // Convert.ToInt16(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
+                            renewalChampionship.grandTotal = renewalChampionship.total + renewalChampionship.seasonCurrentTotal;
+
+                            listOfRenewal.Add(renewalChampionship);
+                        }
+
+
+                        //get all of H2H world cup or ueaf euro
+                        if (model.renewalMode == "H2H" && !String.IsNullOrEmpty(model.championshipIDRenewalWorldCupUefaEuro))
+                        {
+                            paramName = new string[] { "pIdTemporada", "pIdTemporadaAnt", "pIdsCampeonato" };
+                            paramValue = new string[] { Convert.ToString(model.seasonID), Convert.ToString(model.previousSeasonID), model.championshipIDRenewalWorldCupUefaEuro };
+                            dt = db.executePROC("spGetAllConfirmacaoTemporadaOfCampeonatoCDM", paramName, paramValue);
+
+                            for (var i = 0; i < dt.Rows.Count; i++)
+                            {
+
+                                renewalChampionship = new RenewalChampionshipModel();
+                                renewalChampionship.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                                renewalChampionship.userName = dt.Rows[i]["NM_USUARIO"].ToString();
+                                renewalChampionship.userID = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                                renewalChampionship.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
+                                renewalChampionship.teamName = String.Empty;
+
+                                if (String.IsNullOrEmpty(dt.Rows[i]["PT_LSTNEGRA"].ToString()))
+                                    blackListPoints = 0;
+                                else
+                                    blackListPoints = Convert.ToInt16(dt.Rows[i]["PT_LSTNEGRA"].ToString());
+
+
+                                if (String.IsNullOrEmpty(dt.Rows[i]["IN_CONFIRMACAO"].ToString()))
+                                {
+                                    renewalChampionship.actionRenewal = "Ainda não confirmou";
+                                    renewalChampionship.acceptedRenewal = "-1";
+                                    renewalChampionship.status = "AGUARDANDO";
+                                }
+                                else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 1 && blackListPoints >= model.totalLimitBanWorldCupUefaEuro)
+                                {
+                                    renewalChampionship.actionRenewal = "Confirmou, mas chegou ao limite de pontos na Lista Negra para Copa do Mundo/Eurocopa";
+                                    renewalChampionship.acceptedRenewal = "9";
+                                    renewalChampionship.status = "NÃO ACEITO";
+                                }
+                                else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 1)
+                                {
+                                    renewalChampionship.actionRenewal = "Confirmou Participação";
+                                    renewalChampionship.acceptedRenewal = "1";
+                                    renewalChampionship.status = "APROVADO";
+                                }
+                                else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 0)
+                                {
+                                    renewalChampionship.actionRenewal = "Não deseja Participar";
+                                    renewalChampionship.acceptedRenewal = "0";
+                                    renewalChampionship.status = "DESISTIU";
+                                }
+
+                                renewalChampionship.statusInitials = dt.Rows[i]["DS_STATUS"].ToString();
+
+
+                                renewalChampionship.blackListtotal = blackListPoints;
+
+                                if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL"].ToString()))
+                                    renewalChampionship.total = 0;
+                                else
+                                    renewalChampionship.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+
+                                if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString()))
+                                    renewalChampionship.seasonCurrentTotal = 0;
+                                else
+                                    renewalChampionship.seasonCurrentTotal = Convert.ToInt16(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
+
+                                renewalChampionship.grandTotal = renewalChampionship.total + renewalChampionship.seasonCurrentTotal;
+
+                                listOfRenewal.Add(renewalChampionship);
+                            }
+                        }
+
+                        RenewalModel.renewalMode = model.renewalMode;
+                        RenewalModel.seasonID = model.seasonID;
+                        RenewalModel.seasonName = model.seasonName;
+                        RenewalModel.previousSeasonID = model.previousSeasonID;
+                        RenewalModel.previousSeasonName = model.previousSeasonName;
+                        RenewalModel.championshipIDBenchRenewal = model.championshipIDBenchRenewal;
+                        RenewalModel.championshipIDRenewal = model.championshipIDRenewal;
+                        RenewalModel.championshipIDRenewalWorldCupUefaEuro = model.championshipIDRenewalWorldCupUefaEuro;
+                        RenewalModel.totalApprovedRenewal = totAcceptedApproved;
+                        RenewalModel.totalUnderAnalysisRenewal = totUnderAnalysis;
+                        RenewalModel.listOfRenewal = listOfRenewal;
+                        RenewalModel.returnMessage = "HallOfFameSuccessfully";
+                        return CreatedAtRoute("DefaultApi", new { id = 0 }, RenewalModel);
+                    }
+                    catch (Exception ex)
+                    {
+                        RenewalModel = new RenewalViewModel();
+                        model.returnMessage = "error_" + ex.Message;
+                        return CreatedAtRoute("DefaultApi", new { id = 0 }, RenewalModel);
+                    }
+                    finally
+                    {
+                        renewalChampionship = null;
+                        RenewalModel = null;
+                        listOfRenewal = null;
+                    }
+                }
+                else if (model.actionUser == "renewalSquad")
+                {
+                    RenewalPROCLUBSquadViewModel PROCLUBSquadModel = new RenewalPROCLUBSquadViewModel();
+                    RenewalSquadModel renewalSquad = new RenewalSquadModel();
+                    List<RenewalSquadModel> listOfSquad = new List<RenewalSquadModel>();
+
+                    PROCLUBSquadModel.managerID = model.managerID;
+                    PROCLUBSquadModel.seasonID = model.seasonID;
+                    PROCLUBSquadModel.clubName = model.clubName;
+
+                    try
+                    {
+
+                        paramName = new string[] { "pIdUsuario" };
+                        paramValue = new string[] { Convert.ToString(PROCLUBSquadModel.managerID) };
+                        dt = db.executePROC("spGetUsuarioById", paramName, paramValue);
+
+                        PROCLUBSquadModel.psnID = dt.Rows[0]["PSN_ID"].ToString();
+                        PROCLUBSquadModel.mangerName = dt.Rows[0]["NM_USUARIO"].ToString();
+                        PROCLUBSquadModel.mobileNumber = dt.Rows[0]["NO_CELULAR"].ToString();
+                        PROCLUBSquadModel.codeMobileNumber = dt.Rows[0]["NO_DDD"].ToString();
+
+
+                        paramName = new string[] { "pIdTemporada", "pIdManager" };
+                        paramValue = new string[] { Convert.ToString(model.seasonID), Convert.ToString(model.managerID) };
+                        dt = db.executePROC("spGetAllSquadOfClub", paramName, paramValue);
+
+                        for (var i = 0; i < dt.Rows.Count; i++)
+                        {
+                            renewalSquad = new RenewalSquadModel();
+                            renewalSquad.userID = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            renewalSquad.userName = dt.Rows[i]["NM_USUARIO"].ToString();
+                            renewalSquad.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                            if (renewalSquad.userID == model.managerID) { renewalSquad.isCapitain = true; }
+                            renewalSquad.recordDate = dt.Rows[i]["DT_CONFIRMACAO_FORMATADA"].ToString();
+                            listOfSquad.Add(renewalSquad);
+                        }
+
+                        PROCLUBSquadModel.listOfSquad = listOfSquad;
+                        PROCLUBSquadModel.returnMessage = "HallOfFameSuccessfully";
+                        return CreatedAtRoute("DefaultApi", new { id = 0 }, PROCLUBSquadModel);
+                    }
+                    catch (Exception ex)
+                    {
+                        PROCLUBSquadModel = new RenewalPROCLUBSquadViewModel();
+                        model.returnMessage = "error_" + ex.Message;
+                        return CreatedAtRoute("DefaultApi", new { id = 0 }, PROCLUBSquadModel);
+                    }
+                    finally
+                    {
+                        PROCLUBSquadModel = null;
+                        renewalSquad = null;
+                        listOfSquad = null;
+                    }
+                }
                 else if (model.actionUser.Substring(0, 11) == "achievement")
                 {
                     paramName = new string[] { };
@@ -188,6 +525,7 @@ namespace ArenaFifa20.API.NET.Controllers
                         achievementModel = null;
                     }
                 }
+
                 else
                 {
                     return StatusCode(HttpStatusCode.NotAcceptable);

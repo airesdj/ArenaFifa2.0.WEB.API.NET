@@ -21,6 +21,21 @@ namespace ArenaFifa20.API.NET.Models
             public string teamIDUCL { get; set; }
             public string psnIDSCP { get; set; }
             public string teamIDSCP { get; set; }
+
+            //renweal
+            public int previousSeasonID { get; set; }
+            public int managerID { get; set; }
+            public int seasonID { get; set; }
+            public string seasonName { get; set; }
+            public string clubName { get; set; }
+            public string previousSeasonName { get; set; }
+            public string renewalMode { get; set; }
+            public string championshipIDRenewal { get; set; }
+            public string championshipIDBenchRenewal { get; set; }
+            public string championshipIDRenewalWorldCupUefaEuro { get; set; }
+            public int totalLimitBlackList { get; set; }
+            public int totalLimitBanWorldCupUefaEuro { get; set; }
+
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
@@ -76,5 +91,66 @@ namespace ArenaFifa20.API.NET.Models
             public string seasonName { get; set; }
             public string teamName { get; set; }
         }
+
+        public class RenewalViewModel
+        {
+            public List<RenewalChampionshipModel> listOfRenewal { get; set; }
+            public int previousSeasonID { get; set; }
+            public int seasonID { get; set; }
+            public string seasonName { get; set; }
+            public string previousSeasonName { get; set; }
+            public string renewalMode { get; set; }
+            public string championshipIDRenewal { get; set; }
+            public string championshipIDBenchRenewal { get; set; }
+            public string championshipIDRenewalWorldCupUefaEuro { get; set; }
+            public int totalApprovedRenewal { get; set; }
+            public int totalUnderAnalysisRenewal { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
+        }
+
+        public class RenewalChampionshipModel
+        {
+            public int championshipID { get; set; }
+            public int userID { get; set; }
+            public string userName { get; set; }
+            public string psnID { get; set; }
+            public string status { get; set; }
+            public string teamName { get; set; }
+            public string statusInitials { get; set; }
+            public int seasonCurrentTotal { get; set; }
+            public int total { get; set; }
+            public int grandTotal { get; set; }
+            public int playersTotal { get; set; }
+            public int blackListtotal { get; set; }
+            public string acceptedRenewal { get; set; }
+            public string actionRenewal { get; set; }
+        }
+
+        public class RenewalPROCLUBSquadViewModel
+        {
+            public List<RenewalSquadModel> listOfSquad { get; set; }
+            public int managerID { get; set; }
+            public string mangerName { get; set; }
+            public string psnID { get; set; }
+            public int seasonID { get; set; }
+            public string clubName { get; set; }
+            public string mobileNumber { get; set; }
+            public string codeMobileNumber { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
+        }
+
+        public class RenewalSquadModel
+        {
+            public int userID { get; set; }
+            public string userName { get; set; }
+            public string psnID { get; set; }
+            public string recordDate { get; set; }
+            public Boolean isCapitain { get; set; }
+        }
+
+
+
     }
 }

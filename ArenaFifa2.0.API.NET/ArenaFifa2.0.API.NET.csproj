@@ -94,12 +94,83 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="database scripts\ddl\Create Database ArenaFifa BKP.sql" />
+    <Content Include="database scripts\ddl\Create Database ArenaFifa.sql" />
+    <Content Include="database scripts\ddl\Create Database Blog.sql" />
+    <Content Include="database scripts\ddl\Create Database Clashes.sql" />
+    <Content Include="database scripts\ddl\Create Database Comments.sql" />
+    <Content Include="database scripts\ddl\Create Database Spooler.sql" />
+    <Content Include="database scripts\dml\dump0.sql" />
+    <Content Include="database scripts\dml\dump10.sql" />
+    <Content Include="database scripts\dml\dump11.sql" />
+    <Content Include="database scripts\dml\dump12.sql" />
+    <Content Include="database scripts\dml\dump13.sql" />
+    <Content Include="database scripts\dml\dump14.sql" />
+    <Content Include="database scripts\dml\dump15.sql" />
+    <Content Include="database scripts\dml\dump16.sql" />
+    <Content Include="database scripts\dml\dump17.sql" />
+    <Content Include="database scripts\dml\dump18.sql" />
+    <Content Include="database scripts\dml\dump19.sql" />
+    <Content Include="database scripts\dml\dump2.sql" />
+    <Content Include="database scripts\dml\dump3.sql" />
+    <Content Include="database scripts\dml\dump4.sql" />
+    <Content Include="database scripts\dml\dump5.sql" />
+    <Content Include="database scripts\dml\dump6.sql" />
+    <Content Include="database scripts\dml\dump7.sql" />
+    <Content Include="database scripts\dml\dump8.sql" />
+    <Content Include="database scripts\dml\dump9.sql" />
+    <Content Include="database scripts\dml\Script Database ArenaFifa.sql" />
+    <Content Include="database scripts\dml\Script Database Blog.sql" />
+    <Content Include="database scripts\dml\Script Database Clashes.sql" />
+    <Content Include="database scripts\dml\Script Database Clashes2.sql" />
+    <Content Include="database scripts\dml\Script Database Renewal.sql" />
+    <Content Include="database scripts\dml\Script Database Spooler.sql" />
+    <Content Include="database scripts\exemples Procedures MYSQL.sql" />
+    <Content Include="database scripts\proc\arenafifadb\GenerateNewTemporada.sql" />
+    <Content Include="database scripts\proc\arenafifadb\GenerateNewTemporadaFUT.sql" />
+    <Content Include="database scripts\proc\arenafifadb\GenerateNewTemporadaH2H.sql" />
+    <Content Include="database scripts\proc\arenafifadb\GenerateNewTemporadaPRO.sql" />
+    <Content Include="database scripts\proc\arenafifadb\SummaryDashBoards.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbAutomaticDraw.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbBancoReserva.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbCampeonato-Sorteio.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbCampeonato.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbCampeonatoTime.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbCampeonatoUsuario.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbCampeonatoUsuarioSegFase.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbClassificacao.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbComentarioJogo.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbComentarioUsuario.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbConfirmacaoTemporada.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbConfirmElencoPro.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbFase.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbGoleador.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbGoleadorJogo.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbGrupo.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbHistAltCampeonato.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbHistAltUsuario.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbHistConquista.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbHistorioTemporada.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbListaNegra.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbPontuacaoCampeonato.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbPoteTimeGrupo.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbResultadosLancado.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbTabelaJogo.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbTemporada.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbTime.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbTimesFasePreCopa.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbTipos.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbTransmissaoAoVivo.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbUsuario.sql" />
+    <Content Include="database scripts\proc\arenafifadb\TbUsuarioTime.sql" />
+    <Content Include="database scripts\proc\GenerateNewTemporadaPRO - Copia.sql" />
     <Content Include="Global.asax" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Controllers\BenchController.cs" />
+    <Compile Include="Controllers\RankingController.cs" />
     <Compile Include="Controllers\HallOfFameController.cs" />
     <Compile Include="Controllers\HomeUserController.cs" />
     <Compile Include="Controllers\BlackListController.cs" />
@@ -108,6 +179,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\RankingModel.cs" />
     <Compile Include="Models\HallOfFameModel.cs" />
     <Compile Include="Models\BlackListModel.cs" />
     <Compile Include="Models\SeasonModel.cs" />
