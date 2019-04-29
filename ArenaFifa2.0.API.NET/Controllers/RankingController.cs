@@ -16,7 +16,7 @@ namespace ArenaFifa20.API.NET.Controllers
         string[] paramValue = null;
 
         [HttpPost]
-        public IHttpActionResult hallOfFame(SummaryViewModel model)
+        public IHttpActionResult ranking(SummaryViewModel model)
         {
 
 
@@ -76,7 +76,7 @@ namespace ArenaFifa20.API.NET.Controllers
                     model.listOfScorersPRO = listOfScorersPRO;
 
 
-                    model.returnMessage = "HallOfFameSuccessfully";
+                    model.returnMessage = "RankingSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
                 else
@@ -88,6 +88,8 @@ namespace ArenaFifa20.API.NET.Controllers
             catch (Exception ex)
             {
                 model = new SummaryViewModel();
+                model.listOfScorersH2H = new List<listScorers>();
+                model.listOfScorersPRO = new List<listScorers>();
                 model.returnMessage = "error_" + ex.Message;
                 return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
             }
@@ -95,6 +97,9 @@ namespace ArenaFifa20.API.NET.Controllers
             {
                 db.closeConnection();
                 dt = null;
+                listScorers = null;
+                listOfScorersH2H = null;
+                listOfScorersPRO = null;
             }
 
         }
