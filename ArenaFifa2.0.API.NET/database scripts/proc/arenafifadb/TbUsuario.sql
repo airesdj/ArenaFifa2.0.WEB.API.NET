@@ -645,6 +645,45 @@ DELIMITER ;
 
 
 DELIMITER $$
+DROP FUNCTION IF EXISTS `fcGetTimeNameByUserMode` $$
+CREATE FUNCTION `fcGetTimeNameByUserMode`(pIdUsu INTEGER, pTypeMode VARCHAR(3)) RETURNS VARCHAR(80)
+	DETERMINISTIC
+begin      
+	DECLARE _idTime INTEGER DEFAULT NULL;
+	DECLARE _nmTime VARCHAR(80) DEFAULT "";
+	DECLARE _tpTime VARCHAR(5) DEFAULT "";
+	
+	IF pTypeMode = "H2H" THEN
+
+		SET _idTime = fcGetCurrentIdTimeH2H(pIdUsu);
+
+	ELSEIF pTypeMode = "FUT" THEN
+
+		SET _idTime = fcGetCurrentIdTimeFUT(pIdUsu);
+
+	ELSE
+	
+		SET _idTime = fcGetCurrentIdTimePRO(pIdUsu);
+
+	END IF;
+	
+	SELECT NM_TIME, DS_TIPO into _nmTime, _tpTime
+	FROM TB_TIME WHERE ID_TIME = _idTime;
+	
+	IF pTypeMode = "H2H" THEN
+	
+		SET _nmTime = CONCAT(_nmTime, '-');
+		SET _nmTime = CONCAT(_nmTime, _tpTime);
+	
+	END IF;
+	
+	RETURN _nmTime;
+	
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetTitlesWonForUser` $$
 CREATE PROCEDURE `spGetTitlesWonForUser`(idUsu INTEGER)
 begin      
