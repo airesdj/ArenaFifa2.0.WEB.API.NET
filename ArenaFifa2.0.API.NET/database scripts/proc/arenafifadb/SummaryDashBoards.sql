@@ -177,3 +177,54 @@ begin
 
 End$$
 DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetSummaryModeratorMenu` $$
+CREATE PROCEDURE `spGetSummaryModeratorMenu`()
+begin      
+	DECLARE _activeCoaches INTEGER DEFAULT 0;
+	DECLARE _seasonCoaches INTEGER DEFAULT 0;
+	DECLARE _stageNameSeriesH2H VARCHAR(50) DEFAULT "";
+	DECLARE _seasonNameH2H VARCHAR(50) DEFAULT "";
+	DECLARE _seasonNameFUT VARCHAR(50) DEFAULT "";
+	DECLARE _seasonNamePRO VARCHAR(50) DEFAULT "";
+	DECLARE _seasonID INTEGER DEFAULT 0;
+	
+	SET _seasonID = fcGetIdTempCurrent();
+
+	SELECT NM_TEMPORADA into _seasonNameH2H
+	FROM TB_TEMPORADA
+	WHERE ID_TEMPORADA = _seasonID;
+	
+	SELECT COUNT(1) into _activeCoaches
+	FROM TB_USUARIO
+	WHERE ID_USUARIO NOT IN(fcGetIdUsuariosVazio())
+	AND IN_USUARIO_ATIVO = True AND IN_DESEJA_PARTICIPAR = 1;
+	
+	SELECT COUNT(1) into _seasonCoaches
+	FROM (SELECT ID_USUARIO FROM TB_CAMPEONATO_USUARIO 
+	 WHERE ID_CAMPEONATO IN (SELECT ID_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _seasonID)
+	 GROUP BY ID_USUARIO) as X;
+	
+	SELECT F.NM_FASE into _stageNameSeriesH2H
+	FROM TB_TABELA_JOGO T, TB_FASE F
+    WHERE T.ID_CAMPEONATO IN (SELECT ID_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _seasonID AND SG_TIPO_CAMPEONATO IN ('DIV1', 'DIV2', 'DIV3', 'DIV4'))
+	AND T.QT_GOLS_TIME_CASA IS NULL 
+	AND T.ID_FASE = F.ID_FASE
+	ORDER BY T.DT_TABELA_INICIO_JOGO LIMIT 1;
+	
+	IF _stageNameSeriesH2H IS NULL THEN 
+	
+		SET _stageNameSeriesH2H = "Fase não encontrada";
+	
+	END IF;
+
+	
+	SELECT _activeCoaches as totalActiveCoaches, _seasonCoaches as totalSeasonCoaches,
+		   _stageNameSeriesH2H as currentStageNameH2H, _seasonNameH2H as seasonNameH2H,
+		   _seasonNameH2H as seasonNameFUT, _seasonNameH2H as seasonNamePRO;
+   
+End$$
+DELIMITER ;

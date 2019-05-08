@@ -201,7 +201,7 @@ CREATE PROCEDURE `spGetAllTemporadasNoFilterCRUD`()
 begin      
    select *, DATE_FORMAT(DT_INICIO,'%d/%m/%Y') as DT_INICIO_FORMATADA, DATE_FORMAT(DT_FIM,'%d/%m/%Y') as DT_FIM_FORMATADA
    from TB_TEMPORADA
-   order by ID_TEMPORADA;      
+   order by ID_TEMPORADA DESC;      
 End$$
 DELIMITER ;
 
@@ -213,6 +213,6 @@ begin
    select *, DATE_FORMAT(DT_INICIO,'%d/%m/%Y') as DT_INICIO_FORMATADA, DATE_FORMAT(DT_FIM,'%d/%m/%Y') as DT_FIM_FORMATADA
    from TB_TEMPORADA
    where (NM_TEMPORADA like CONCAT('%',pFilter,'%'))
-   order by ID_TEMPORADA;      
+   order by ID_TEMPORADA DESC;      
 End$$
 DELIMITER ;

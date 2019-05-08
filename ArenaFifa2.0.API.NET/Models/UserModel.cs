@@ -104,4 +104,19 @@ namespace ArenaFifa20.API.NET.Models
         public int total { get; set; }
     }
 
+    public class UserViewModel
+    {
+        public List<UserDetailsModel> listOfUser { get; set; }
+        public string actionUser { get; set; }
+        public string returnMessage { get; set; }
+    }
+
+    public class UserDetailsModel
+    {
+        public int id { get; set; }
+        public string psnID { get; set; }
+        public string name { get; set; }
+        public string state { get; set; }
+    }
+
 }

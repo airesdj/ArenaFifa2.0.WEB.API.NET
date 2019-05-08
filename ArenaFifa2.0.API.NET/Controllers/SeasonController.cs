@@ -4,6 +4,7 @@ using static ArenaFifa20.API.NET.Models.SeasonModel;
 using DBConnection;
 using System.Data;
 using System.Net;
+using System.Collections.Generic;
 
 namespace ArenaFifa20.API.NET.Controllers
 {
@@ -71,17 +72,23 @@ namespace ArenaFifa20.API.NET.Controllers
         {
 
             SeasonDetails seasonDetails = new SeasonDetails();
+            SeasonListModesViewModel seasonModel = new SeasonListModesViewModel();
+            List<SeasonDetails> listOfSeasons = new List<SeasonDetails>();
             DataTable dt = null;
             db.openConnection();
 
 
             try
             {
+
                 if (String.IsNullOrEmpty(Convert.ToString(id)) || id == 0)
                 {
                     paramName = new string[] {  };
                     paramValue = new string[] {  };
                     dt = db.executePROC("spGetCurrentTemporada", paramName, paramValue);
+
+                    SetDetailsSeason(dt, seasonDetails);
+                    return Ok(seasonDetails);
 
                 }
                 else
@@ -90,22 +97,77 @@ namespace ArenaFifa20.API.NET.Controllers
                     paramValue = new string[] { Convert.ToString(id) };
                     dt = db.executePROC("spGetTemporada", paramName, paramValue);
 
-                }
+                    SetDetailsSeason(dt, seasonDetails);
+                    return Ok(seasonDetails);
 
-                SetDetailsSeason(dt, seasonDetails);
-                return Ok(seasonDetails);
+                }
 
             }
             catch (Exception ex)
             {
                 seasonDetails = new SeasonDetails();
-                seasonDetails.returnMessage = "errorGetUser_" + ex.Message;
+                seasonDetails.returnMessage = "errorGetSeasonDetails_" + ex.Message;
                 return CreatedAtRoute("DefaultApi", new { id = 0 }, seasonDetails);
             }
             finally
             {
                 db.closeConnection();
                 seasonDetails = null;
+                seasonModel = null;
+                listOfSeasons = null;
+                dt = null;
+            }
+
+        }
+
+        [HttpGet]
+        public IHttpActionResult GetAllSeasons()
+        {
+
+            SeasonListModesViewModel seasonModel = new SeasonListModesViewModel();
+            SeasonDetails seasonDetails = new SeasonDetails();
+            List<SeasonDetails> listOfSeasons = new List<SeasonDetails>();
+            DataTable dt = null;
+            db.openConnection();
+
+
+            try
+            {
+                paramName = new string[] {  };
+                paramValue = new string[] {  };
+                dt = db.executePROC("spGetAllTemporadasNoFilterCRUD", paramName, paramValue);
+
+                for (var i = 0; i < dt.Rows.Count; i++)
+                {
+                    seasonDetails = new SeasonDetails();
+                    seasonDetails.id = Convert.ToInt16(dt.Rows[i]["ID_TEMPORADA"].ToString());
+                    seasonDetails.name = dt.Rows[i]["NM_TEMPORADA"].ToString();
+                    seasonDetails.active = Convert.ToByte(dt.Rows[i]["IN_TEMPORADA_ATIVA"].ToString());
+                    seasonDetails.dtStartSeason = Convert.ToDateTime(dt.Rows[i]["DT_INICIO"].ToString());
+                    if (!String.IsNullOrEmpty(dt.Rows[i]["DT_FIM"].ToString())) { seasonDetails.dtEndSeason = Convert.ToDateTime(dt.Rows[i]["DT_FIM"].ToString()); }
+
+                    seasonDetails.typeMode = string.Empty;
+                    listOfSeasons.Add(seasonDetails);
+                }
+
+                seasonModel.listOfSeasons = listOfSeasons;
+                seasonModel.returnMessage = "ModeratorSuccessfully";
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, seasonModel);
+
+            }
+            catch (Exception ex)
+            {
+                seasonModel = new SeasonListModesViewModel();
+                seasonModel.listOfSeasons = new List<SeasonDetails>();
+                seasonModel.returnMessage = "errorGetAllSeasons_" + ex.Message;
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, seasonModel);
+            }
+            finally
+            {
+                db.closeConnection();
+                seasonDetails = null;
+                seasonModel = null;
+                listOfSeasons = null;
                 dt = null;
             }
 

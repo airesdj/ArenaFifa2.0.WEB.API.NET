@@ -260,6 +260,18 @@ DELIMITER ;
 
 
 DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllActivateUsuarios` $$
+CREATE PROCEDURE `spGetAllActivateUsuarios`()
+begin      
+   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMADA
+   from TB_USUARIO
+   where IN_USUARIO_ATIVO = true AND IN_DESEJA_PARTICIPAR = 1
+   order by NM_USUARIO;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllUsuariosNoFilterCRUD` $$
 CREATE PROCEDURE `spGetAllUsuariosNoFilterCRUD`()
 begin      

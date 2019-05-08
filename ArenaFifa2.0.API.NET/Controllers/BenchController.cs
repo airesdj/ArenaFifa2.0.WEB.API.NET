@@ -18,51 +18,92 @@ namespace ArenaFifa20.API.NET.Controllers
         string[] paramValue = null;
 
         [HttpPost]
-        public IHttpActionResult getListOfBench(BenchModesViewModel bench)
+        public IHttpActionResult postBench(BenchModesViewModel model)
         {
 
             db.openConnection();
             var objFunctions = new Commons.functions();
-            BenchModes benchPlayersModel = new BenchModes();
+            BenchDetailsModel benchPlayersModel = new BenchDetailsModel();
             BenchModesViewModel listBenchPlayers = new BenchModesViewModel();
-            List<BenchModes> listOfBench = new List<BenchModes>();
+            List<BenchDetailsModel> listOfBench = new List<BenchDetailsModel>();
             DataTable dt = null;
-            string[] typeOfBench = { "H2H", "FUT", "PRO" };
-
             try
             {
 
-                for (int i = 0; i < typeOfBench.Length; i++)
+                if (model.actionUser == "listMainPage")
                 {
+                    string[] typeOfBench = { "H2H", "FUT", "PRO" };
 
-                    paramName = new string[] { "pTpBancoReserva" };
-                    paramValue = new string[] { typeOfBench[i] };
-                    dt = db.executePROC("spGetAllBancoReservaByTipo", paramName, paramValue);
-
-                    if (dt.Rows.Count > 0)
+                    for (int i = 0; i < typeOfBench.Length; i++)
                     {
-                        for (int j = 0; j < dt.Rows.Count; j++)
-                        {
-                            benchPlayersModel = new BenchModes();
-                            benchPlayersModel.id = Convert.ToInt16(dt.Rows[j]["ID_BANCO_RESERVA"]);
-                            benchPlayersModel.userID = Convert.ToInt16(dt.Rows[j]["ID_USUARIO"]);
-                            benchPlayersModel.name = dt.Rows[j]["NM_USUARIO"].ToString();
-                            benchPlayersModel.psnID = dt.Rows[j]["PSN_ID"].ToString();
-                            benchPlayersModel.state = dt.Rows[j]["DS_ESTADO"].ToString();
-                            benchPlayersModel.team = dt.Rows[j]["NM_TIME_FUT"].ToString();
-                            benchPlayersModel.typeBench = typeOfBench[i];
-                            listOfBench.Add(benchPlayersModel);
 
+                        paramName = new string[] { "pTpBancoReserva" };
+                        paramValue = new string[] { typeOfBench[i] };
+                        dt = db.executePROC("spGetAllBancoReservaByTipo", paramName, paramValue);
+
+                        if (dt.Rows.Count > 0)
+                        {
+                            for (int j = 0; j < dt.Rows.Count; j++)
+                            {
+                                benchPlayersModel = new BenchDetailsModel();
+                                benchPlayersModel.id = Convert.ToInt16(dt.Rows[j]["ID_BANCO_RESERVA"]);
+                                benchPlayersModel.userID = Convert.ToInt16(dt.Rows[j]["ID_USUARIO"]);
+                                benchPlayersModel.name = dt.Rows[j]["NM_USUARIO"].ToString();
+                                benchPlayersModel.psnID = dt.Rows[j]["PSN_ID"].ToString();
+                                benchPlayersModel.state = dt.Rows[j]["DS_ESTADO"].ToString();
+                                benchPlayersModel.team = dt.Rows[j]["NM_TIME_FUT"].ToString();
+                                benchPlayersModel.typeBench = typeOfBench[i];
+                                listOfBench.Add(benchPlayersModel);
+
+                            }
                         }
+
                     }
 
+                    listBenchPlayers.listOfBench = listOfBench;
+                    listBenchPlayers.returnMessage = "getBenchSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, listBenchPlayers);
                 }
+                else if(model.actionUser == "dellCrud")
+                {
 
-                listBenchPlayers.listBench = listOfBench;
-                listBenchPlayers.returnMessage = "getBenchSuccessfully";
-                return CreatedAtRoute("DefaultApi", new { id = 0 }, listBenchPlayers);
-                //return Ok(listBenchPlayers);
+                    BenchDetailsModel oDetails = model.listOfBench[0];
 
+                    paramName = new string[] { "pIdBancoReserva" };
+                    paramValue = new string[] { Convert.ToString(oDetails.id) };
+                    dt = db.executePROC("spUpdateToEndBancoReservaById", paramName, paramValue);
+
+                    model.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser == "moveCrud")
+                {
+
+                    BenchDetailsModel oDetails = model.listOfBench[0];
+
+                    paramName = new string[] { "pIdBancoReserva" };
+                    paramValue = new string[] { Convert.ToString(oDetails.id) };
+                    dt = db.executePROC("spAddBancoReservaToEndOfQueue", paramName, paramValue);
+
+                    model.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser == "addCrud")
+                {
+
+                    BenchDetailsModel oDetails = model.listOfBench[0];
+
+                    paramName = new string[] { "pIdUsu", "pNmTime", "pTpBanco" };
+                    paramValue = new string[] { Convert.ToString(oDetails.userID), oDetails.team, oDetails.typeBench };
+                    dt = db.executePROC("spAddBancoReserva", paramName, paramValue);
+
+                    model.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else
+                {
+                    return StatusCode(HttpStatusCode.NotAcceptable);
+                }
             }
             catch (Exception ex)
             {
@@ -81,5 +122,113 @@ namespace ArenaFifa20.API.NET.Controllers
 
             }
         }
+
+        [HttpGet]
+        public IHttpActionResult GetAllBench()
+        {
+
+            BenchModesViewModel benchModel = new BenchModesViewModel();
+            BenchDetailsModel benchDetails = new BenchDetailsModel();
+            List<BenchDetailsModel> listOfBench = new List<BenchDetailsModel>();
+            DataTable dt = null;
+            db.openConnection();
+
+
+            try
+            {
+                paramName = new string[] { };
+                paramValue = new string[] { };
+                dt = db.executePROC("spGetAllBancoReservaNoFilterCRUD", paramName, paramValue);
+
+                for (var i = 0; i < dt.Rows.Count; i++)
+                {
+                    benchDetails = new BenchDetailsModel();
+                    benchDetails.id = Convert.ToInt16(dt.Rows[i]["ID_BANCO_RESERVA"].ToString());
+                    benchDetails.userID = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                    benchDetails.name = dt.Rows[i]["NM_USUARIO"].ToString();
+                    benchDetails.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                    benchDetails.typeBench = dt.Rows[i]["TP_BANCO_RESERVA"].ToString();
+                    benchDetails.team = dt.Rows[i]["NM_TIME_FUT"].ToString();
+
+                    listOfBench.Add(benchDetails);
+                }
+
+                benchModel.listOfBench = listOfBench;
+                benchModel.returnMessage = "ModeratorSuccessfully";
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, benchModel);
+
+            }
+            catch (Exception ex)
+            {
+                benchModel = new BenchModesViewModel();
+                benchModel.listOfBench = new List<BenchDetailsModel>();
+                benchModel.returnMessage = "errorGetAllSeasons_" + ex.Message;
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, benchModel);
+            }
+            finally
+            {
+                db.closeConnection();
+                benchDetails = null;
+                benchModel = null;
+                listOfBench = null;
+                dt = null;
+            }
+
+        }
+
+
+        [HttpGet]
+        public IHttpActionResult GetBench(int id)
+        {
+
+            BenchModesViewModel benchModel = new BenchModesViewModel();
+            BenchDetailsModel benchDetails = new BenchDetailsModel();
+            List<BenchDetailsModel> listOfBench = new List<BenchDetailsModel>();
+            DataTable dt = null;
+            db.openConnection();
+
+
+            try
+            {
+                paramName = new string[] { "pIdBancoReserva" };
+                paramValue = new string[] { Convert.ToString(id) };
+                dt = db.executePROC("spGetBancoReserva", paramName, paramValue);
+
+                for (var i = 0; i < dt.Rows.Count; i++)
+                {
+                    benchDetails = new BenchDetailsModel();
+                    benchDetails.id = Convert.ToInt16(dt.Rows[i]["ID_BANCO_RESERVA"].ToString());
+                    benchDetails.userID = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                    benchDetails.name = dt.Rows[i]["NM_USUARIO"].ToString();
+                    benchDetails.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                    benchDetails.typeBench = dt.Rows[i]["TP_BANCO_RESERVA"].ToString();
+                    benchDetails.team = dt.Rows[i]["NM_TIME_FUT"].ToString();
+
+                    listOfBench.Add(benchDetails);
+                }
+
+                benchModel.listOfBench = listOfBench;
+                benchModel.returnMessage = "ModeratorSuccessfully";
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, benchModel);
+
+            }
+            catch (Exception ex)
+            {
+                benchModel = new BenchModesViewModel();
+                benchModel.listOfBench = new List<BenchDetailsModel>();
+                benchModel.returnMessage = "errorGetAllSeasons_" + ex.Message;
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, benchModel);
+            }
+            finally
+            {
+                db.closeConnection();
+                benchDetails = null;
+                benchModel = null;
+                listOfBench = null;
+                dt = null;
+            }
+
+        }
+
     }
 }

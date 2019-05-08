@@ -548,5 +548,54 @@ namespace ArenaFifa20.API.NET.Controllers
 
         }
 
+        [HttpGet]
+        public IHttpActionResult GetAllUsers()
+        {
+
+            DataTable dt = null;
+            UserViewModel UserModel = new UserViewModel();
+            List<UserDetailsModel> listOfUsers = new List<UserDetailsModel>();
+            UserDetailsModel userDetails = new UserDetailsModel();
+
+            try
+            {
+                db.openConnection();
+
+                paramName = new string[] {  };
+                paramValue = new string[] {  };
+                dt = db.executePROC("spGetAllActivateUsuarios", paramName, paramValue);
+
+                var rowVal = dt.Rows[0];
+
+                for (var i = 0; i < dt.Rows.Count; i++)
+                {
+                    userDetails = new UserDetailsModel();
+                    userDetails.id = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                    userDetails.name = dt.Rows[i]["NM_USUARIO"].ToString();
+                    userDetails.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                    listOfUsers.Add(userDetails);
+                }
+
+                UserModel.listOfUser = listOfUsers;
+                return Ok(UserModel);
+            }
+            catch (Exception ex)
+            {
+                UserModel = new UserViewModel();
+                UserModel.listOfUser = new List<UserDetailsModel>();
+                UserModel.returnMessage = "errorGetUser_" + ex.Message;
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, UserModel);
+            }
+            finally
+            {
+                db.closeConnection();
+                UserModel = null;
+                listOfUsers = null;
+                userDetails = null;
+                dt = null;
+            }
+
+        }
+
     }
 }

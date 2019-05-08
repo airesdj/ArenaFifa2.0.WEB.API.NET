@@ -16,6 +16,13 @@ namespace ArenaFifa20.API.NET.Models
             public string returnMessage { get; set; }
         }
 
+        public class SeasonListModesViewModel
+        {
+            public List<SeasonDetails> listOfSeasons { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
+        }
+
         public class SeasonDetails
         {
             public int id { get; set; }
@@ -24,6 +31,7 @@ namespace ArenaFifa20.API.NET.Models
             public DateTime dtStartSeason { get; set; }
             public DateTime dtEndSeason { get; set; }
             public string typeMode { get; set; }
+            public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
 

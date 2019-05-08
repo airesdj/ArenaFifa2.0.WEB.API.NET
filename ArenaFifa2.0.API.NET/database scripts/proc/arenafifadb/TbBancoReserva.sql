@@ -48,11 +48,11 @@ DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetBancoReserva` $$
-CREATE PROCEDURE `spGetBancoReserva`(pIdBancoRserva INTEGER)
+CREATE PROCEDURE `spGetBancoReserva`(pIdBancoReserva INTEGER)
 begin      
    select B.*, U.NM_USUARIO, U.PSN_ID, U.DS_ESTADO
    from TB_LISTA_BANCO_RESERVA B, TB_USUARIO U
-   where B.ID_BANCO_RESERVA = pIdBancoRserva
+   where B.ID_BANCO_RESERVA = pIdBancoReserva
    and B.ID_USUARIO = U.ID_USUARIO;
 End$$
 DELIMITER ;
@@ -60,12 +60,12 @@ DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetBancoReservaByTipo` $$
-CREATE PROCEDURE `spGetBancoReservaByTipo`(pIdUsu INTEGER, pTpBancoRserva VARCHAR(3))
+CREATE PROCEDURE `spGetBancoReservaByTipo`(pIdUsu INTEGER, pTpBancoReserva VARCHAR(3))
 begin      
    select B.*, U.NM_USUARIO, U.PSN_ID, U.DS_ESTADO
    from TB_LISTA_BANCO_RESERVA B, TB_USUARIO U
    where B.ID_USUARIO = pIdUsu
-   and B.TP_BANCO_RESERVA = pTpBancoRserva
+   and B.TP_BANCO_RESERVA = pTpBancoReserva
    and B.DT_FIM IS NULL
    and B.ID_USUARIO = U.ID_USUARIO;
 End$$
@@ -74,11 +74,11 @@ DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spUpdateToEndBancoReservaById` $$
-CREATE PROCEDURE `spUpdateToEndBancoReservaById`(pIdBancoRserva INTEGER)
+CREATE PROCEDURE `spUpdateToEndBancoReservaById`(pIdBancoReserva INTEGER)
 begin      
    update TB_LISTA_BANCO_RESERVA
    set DT_FIM = now()
-   where B.ID_BANCO_RESERVA = pIdBancoRserva;
+   where ID_BANCO_RESERVA = pIdBancoReserva;
 End$$
 DELIMITER ;
 
@@ -97,12 +97,12 @@ DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spUpdateToEndBancoReservaByUsuario` $$
-CREATE PROCEDURE `spUpdateToEndBancoReservaByUsuario`(pIdUsu INTEGER, pTpBancoRserva VARCHAR(3))
+CREATE PROCEDURE `spUpdateToEndBancoReservaByUsuario`(pIdUsu INTEGER, pTpBancoReserva VARCHAR(3))
 begin      
    update TB_LISTA_BANCO_RESERVA
    set DT_FIM = now()
    where ID_USUARIO = pIdUsu
-   and TP_BANCO_RESERVA = pTpBancoRserva
+   and TP_BANCO_RESERVA = pTpBancoReserva
    and DT_FIM IS NULL;
 End$$
 DELIMITER ;
@@ -110,11 +110,11 @@ DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spUpdateToEndBancoReservaByTipo` $$
-CREATE PROCEDURE `spUpdateToEndBancoReservaByTipo`(pTpBancoRserva VARCHAR(3))
+CREATE PROCEDURE `spUpdateToEndBancoReservaByTipo`(pTpBancoReserva VARCHAR(3))
 begin      
    update TB_LISTA_BANCO_RESERVA
    set DT_FIM = now()
-   where TP_BANCO_RESERVA = pTpBancoRserva
+   where TP_BANCO_RESERVA = pTpBancoReserva
    and DT_FIM IS NULL;
 End$$
 DELIMITER ;
@@ -146,17 +146,22 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddBancoReservaToEndOfQueue` $$
 CREATE PROCEDURE `spAddBancoReservaToEndOfQueue`(
-	pIdBancoRserva INTEGER,
-	pIdUsu INTEGER,
-	pNmTime VARCHAR(50),
-	pTpBanco VARCHAR(3)
+	pIdBancoReserva INTEGER
 )
 begin      
-	insert into `TB_LISTA_BANCO_RESERVA` (ID_USUARIO, TP_BANCO_RESERVA, NM_TIME_FUT, IN_CONSOLE, DT_INICIO)
-	select ID_USUARIO, TP_BANCO_RESERVA, NM_TIME_FUT, IN_CONSOLE, now()
-    from `TB_LISTA_BANCO_RESERVA` 
-	where ID_BANCO_RESERVA = pIdBancoRserva;
+	DECLARE _idUsu INTEGER DEFAULT NULL;
+	DECLARE _nmTime VARCHAR(50) DEFAULT "";
+	DECLARE _tpBanco VARCHAR(3) DEFAULT "";
+	DECLARE _console VARCHAR(3) DEFAULT "";
 	
-	call `arenafifadb`.`spUpdateFinishBancoReserva`(pIdBancoRserva);
+	SELECT ID_USUARIO, TP_BANCO_RESERVA, NM_TIME_FUT, IN_CONSOLE into _idUsu, _tpBanco, _nmTime, _console
+	FROM TB_LISTA_BANCO_RESERVA
+	WHERE ID_BANCO_RESERVA = pIdBancoReserva;
+	
+	call `arenafifadb`.`spUpdateToEndBancoReservaByUsuario`(_idUsu, _tpBanco);
+
+	insert into `TB_LISTA_BANCO_RESERVA` (ID_USUARIO, TP_BANCO_RESERVA, NM_TIME_FUT, IN_CONSOLE, DT_INICIO)
+	values (_idUsu, _tpBanco, _nmTime, _console, now());
+	
 End$$
 DELIMITER ;

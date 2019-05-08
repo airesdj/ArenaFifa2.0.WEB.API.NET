@@ -9,12 +9,12 @@ namespace ArenaFifa20.API.NET.Models
     {
         public class BenchModesViewModel
         {
-            public List<BenchModes> listBench { get; set; }
+            public List<BenchDetailsModel> listOfBench { get; set; }
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
 
-        public class BenchModes
+        public class BenchDetailsModel
         {
             public int id { get; set; }
             public int userID { get; set; }
@@ -22,6 +22,9 @@ namespace ArenaFifa20.API.NET.Models
             public string name { get; set; }
             public string state { get; set; }
             public string team { get; set; }
+            public DateTime dateStarted { get; set; }
+            public DateTime dateFinished { get; set; }
+            public string console { get; set; }
             public string typeBench { get; set; }
         }
 
