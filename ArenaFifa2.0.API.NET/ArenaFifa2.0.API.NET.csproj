@@ -169,21 +169,28 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Controllers\ScorerController.cs" />
+    <Compile Include="Controllers\AcceptingNewSeasonController.cs" />
     <Compile Include="Controllers\BenchController.cs" />
     <Compile Include="Controllers\ModeratorController.cs" />
     <Compile Include="Controllers\RankingController.cs" />
     <Compile Include="Controllers\HallOfFameController.cs" />
     <Compile Include="Controllers\HomeUserController.cs" />
     <Compile Include="Controllers\BlackListController.cs" />
+    <Compile Include="Controllers\TeamController.cs" />
     <Compile Include="Controllers\SeasonController.cs" />
     <Compile Include="Controllers\SubscribeBenchController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\ScorerModel.cs" />
     <Compile Include="Models\ModeratorModel.cs" />
     <Compile Include="Models\RankingModel.cs" />
     <Compile Include="Models\HallOfFameModel.cs" />
     <Compile Include="Models\BlackListModel.cs" />
+    <Compile Include="Models\AcceptingNewSeasonModel.cs" />
+    <Compile Include="Models\TeamModel.cs" />
     <Compile Include="Models\SeasonModel.cs" />
     <Compile Include="Models\BenchModel.cs" />
     <Compile Include="Models\UserModel.cs" />

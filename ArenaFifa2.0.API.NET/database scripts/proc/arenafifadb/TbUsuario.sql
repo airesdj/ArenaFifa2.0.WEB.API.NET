@@ -114,17 +114,23 @@ DROP PROCEDURE IF EXISTS `spDeleteUsuario` $$
 CREATE PROCEDURE `spDeleteUsuario`(
 	pIdUsuario INTEGER,
 	pIdUsuarioOperacao INTEGER,
-	pPsnUsuario VARCHAR(30),
 	pPsnUsuarioOperacao VARCHAR(30),
 	pDsPaginaOperacao VARCHAR(30)
 )
 begin      
+	DECLARE _psnID VARCHAR(30) DEFAULT "";
    
    update TB_USUARIO
-   set IN_USUARIO_ATIVO = false
+   set IN_USUARIO_ATIVO = false,
+   DT_ULTIMA_ALTERACAO = now(),
+   DS_LOGIN_ALTERACAO = pPsnUsuarioOperacao
    where ID_USUARIO = pIdUsuario;
    
-   call `arenafifadb`.`spAddHistAltUsuario`(pIdUsuario, pIdUsuarioOperacao, 'INATIVANDO USUARIO', pPsnUsuario, pPsnUsuarioOperacao, pDsPaginaOperacao);
+   SELECT PSN_ID into _psnID 
+   FROM TB_USUARIO
+   where ID_USUARIO = pIdUsuario;
+   
+   call `arenafifadb`.`spAddHistAltUsuario`(pIdUsuario, pIdUsuarioOperacao, 'INATIVANDO USUARIO', _psnID, pPsnUsuarioOperacao, pDsPaginaOperacao);
 End$$
 DELIMITER ;
 
@@ -181,7 +187,7 @@ DROP PROCEDURE IF EXISTS `spGetUsuarioById` $$
 CREATE PROCEDURE `spGetUsuarioById`(pIdUsuario INTEGER)
 begin      
    select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DT_ACESSO_FORMATADA, 
-   DATE_FORMAT(DT_CADASTRO,'%d/%m/%Y') as DT_CADASTRO_FORMATADA, DATE_FORMAT(DT_ULTIMA_ALTERACAO,'%d/%m/%Y') as DT_ALTERACAO_FORMATADA,
+   DATE_FORMAT(DT_CADASTRO,'%d/%m/%Y') as DT_CADASTRO_FORMATADA, DATE_FORMAT(DT_ULTIMA_ALTERACAO,'%d/%m/%Y %H:%i:%s') as DT_ALTERACAO_FORMATADA,
    fcGetCurrentIdTimeH2H(id_usuario) as id_TimeH2H, fcGetCurrentIdTimeFUT(id_usuario) as id_TimeFUT, fcGetCurrentIdTimePRO(id_usuario) as id_TimePRO
    from TB_USUARIO
    where ID_USUARIO = pIdUsuario;
@@ -193,7 +199,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetUsuarioByLogin` $$
 CREATE PROCEDURE `spGetUsuarioByLogin`(dsLogin VARCHAR(30))
 begin      
-   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMADA, 
+   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMATADA, 
    fcGetCurrentIdTimeH2H(id_usuario) as id_TimeH2H, fcGetCurrentIdTimeFUT(id_usuario) as id_TimeFUT, fcGetCurrentIdTimePRO(id_usuario) as id_TimePRO
    from TB_USUARIO
    where PSN_ID = dsLogin
@@ -263,7 +269,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllActivateUsuarios` $$
 CREATE PROCEDURE `spGetAllActivateUsuarios`()
 begin      
-   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMADA
+   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMATADA
    from TB_USUARIO
    where IN_USUARIO_ATIVO = true AND IN_DESEJA_PARTICIPAR = 1
    order by NM_USUARIO;
@@ -275,7 +281,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllUsuariosNoFilterCRUD` $$
 CREATE PROCEDURE `spGetAllUsuariosNoFilterCRUD`()
 begin      
-   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMADA
+   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMATADA
    from TB_USUARIO
    order by ID_USUARIO;
 End$$
@@ -286,7 +292,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllUsuariosWithFilterCRUD` $$
 CREATE PROCEDURE `spGetAllUsuariosWithFilterCRUD`(pFilter VARCHAR(20))
 begin      
-   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMADA
+   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMATADA
    from TB_USUARIO
    where (NM_USUARIO like CONCAT('%',pFilter,'%') or PSN_ID like CONCAT('%',pFilter,'%'))
    order by ID_USUARIO;
@@ -429,15 +435,13 @@ CREATE PROCEDURE `spAddUsuario`(
 )
 begin
 	DECLARE _idUsuario INTEGER DEFAULT NULL;
-	insert into TB_USUARIO (NM_USUARIO, DS_EMAIL, PSN_ID, IN_USUARIO_ATIVO, DS_COMO_FICOU_SABENDO, DS_QUAL, NM_TIME, DT_NASCIMENTO, DS_ESTADO, IN_RECEBER_EMAIL_ALERTA, 
-	                        IN_RECEBER_EMAIL_SITUACAO_CAMPEONATO, IN_DESEJA_PARTICIPAR, IN_USUARIO_MODERADOR, DT_CADASTRO, DT_ULTIMA_ALTERACAO, DS_LOGIN_ALTERACAO, DS_SENHA20)
-	values (pNmUsuario, pDsEmail, pPsnId, pInAtivo, pDsFicouSabendo, pDsQual, pNmTime, pDtNasc, pDsEstado, pInReceberAlerta, pInReceberSit, 
-	        pInDesejaPartic, pInModerador, now(), now(), pDsPsnCadastro, fcGetPassWDCrypto(pDsSenhaBase64));
+	DECLARE _passWD VARCHAR(100) DEFAULT "";
 	
-	select ID_USUARIO into _idUsuario 
-	from TB_USUARIO
-	order by ID_USUARIO desc
-	limit 1;
+	IF pDsSenhaBase64 = "" THEN
+		SET _passWD = NULL;
+	ELSE
+		SET _passWD = fcGetPassWDCrypto(pDsSenhaBase64);
+	END IF;
 	
 	IF pPsnUsuarioOperacao = "NULL" THEN
 	
@@ -446,6 +450,16 @@ begin
 	
 	END IF;
 	
+	insert into TB_USUARIO (NM_USUARIO, DS_EMAIL, PSN_ID, IN_USUARIO_ATIVO, DS_COMO_FICOU_SABENDO, DS_QUAL, NM_TIME, DT_NASCIMENTO, DS_ESTADO, IN_RECEBER_EMAIL_ALERTA, 
+	                        IN_RECEBER_EMAIL_SITUACAO_CAMPEONATO, IN_DESEJA_PARTICIPAR, IN_USUARIO_MODERADOR, DT_CADASTRO, DT_ULTIMA_ALTERACAO, DS_LOGIN_ALTERACAO, DS_SENHA20)
+	values (pNmUsuario, pDsEmail, pPsnId, pInAtivo, pDsFicouSabendo, pDsQual, pNmTime, pDtNasc, pDsEstado, pInReceberAlerta, pInReceberSit, 
+	        pInDesejaPartic, pInModerador, now(), now(), pDsPsnCadastro, _passWD);
+	
+	select ID_USUARIO into _idUsuario 
+	from TB_USUARIO
+	order by ID_USUARIO desc
+	limit 1;
+	
     call `arenafifadb`.`spAddHistAltUsuario`(_idUsuario, pIdUsuarioOperacao, 'INCLUINDO USUARIO', pPsnId, pPsnUsuarioOperacao, pDsPaginaOperacao);
 	select _idUsuario as 'ID_USUARIO';
 END$$
@@ -453,8 +467,8 @@ DELIMITER ;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spUpdadeUsuario` $$
-CREATE PROCEDURE `spUpdadeUsuario`(
+DROP PROCEDURE IF EXISTS `spUpdateUsuario` $$
+CREATE PROCEDURE `spUpdateUsuario`(
 	pIdUsuario INTEGER,
 	pNmUsuario VARCHAR(50),
 	pDsEmail VARCHAR(80),

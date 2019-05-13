@@ -114,10 +114,34 @@ DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllTipoTime` $$
-CREATE PROCEDURE `spGetTime`()
+CREATE PROCEDURE `spGetAllTipoTime`()
 begin      
    select *
    from TB_TIPO_TIME
    order by NM_TIPO_TIME;      
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllTimesH2H` $$
+CREATE PROCEDURE `spGetAllTimesH2H`()
+begin      
+   select T.*, P.NM_Tipo_Time, U.NM_Usuario, (CONCAT(U.NM_Usuario, ' (', U.PSN_ID, ')')) as NM_Tecnico_FUT
+   from (TB_TIME T INNER JOIN TB_TIPO_TIME P ON  T.ID_Tipo_Time = P.ID_Tipo_Time) LEFT JOIN TB_USUARIO U ON T.ID_TECNICO_FUT = U.ID_Usuario
+   WHERE T.ID_TIPO_TIME NOT IN (37,39,40,41,42)
+   order by T.NM_TIME;      
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllTimesPRO` $$
+CREATE PROCEDURE `spGetAllTimesPRO`()
+begin      
+   select T.*, P.NM_Tipo_Time, U.NM_Usuario, (CONCAT(U.NM_Usuario, ' (', U.PSN_ID, ')')) as NM_Tecnico_FUT
+   from (TB_TIME T INNER JOIN TB_TIPO_TIME P ON  T.ID_Tipo_Time = P.ID_Tipo_Time) LEFT JOIN TB_USUARIO U ON T.ID_TECNICO_FUT = U.ID_Usuario
+   WHERE T.ID_TIPO_TIME = 42
+   order by T.NM_TIME;      
 End$$
 DELIMITER ;

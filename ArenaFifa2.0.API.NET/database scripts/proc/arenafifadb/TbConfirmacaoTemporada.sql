@@ -10,46 +10,60 @@ CREATE PROCEDURE `spAddUpdateConfirmacaoTemporada`(
 	pIdCampeonato INTEGER,
 	pIdUsu INTEGER,
 	pInConfirm INTEGER,
+	pInOrdernacao INTEGER,
 	pNmTimeFUT VARCHAR(50)
 )
 begin
 	DECLARE _inLastOrdenacao INTEGER DEFAULT NULL;
 	DECLARE _inUsuarioFound INTEGER DEFAULT 0;
 
-	select IN_ORDENACAO into _inLastOrdenacao
-	from TB_CONFIRMACAO_TEMPORADA
-	where ID_TEMPORADA = pIdTemporada
-	and ID_CAMPEONATO = pIdCampeonato
-	order by IN_ORDENACAO DESC
-	limit 1;
+	IF pIdTemporada = 0 THEN
+		SET pIdTemporada = fcGetIdTempCurrent() + 1;
+	END IF;
 	
-	IF (_inLastOrdenacao IS NULL) THEN
+	IF pInOrdernacao = 0 THEN
 	
-		SET _inLastOrdenacao = 1000;
+		select IN_ORDENACAO into _inLastOrdenacao
+		from TB_CONFIRMACAO_TEMPORADA
+		where ID_TEMPORADA = pIdTemporada
+		and ID_CAMPEONATO = pIdCampeonato
+		order by IN_ORDENACAO DESC
+		limit 1;
+		
+		IF (_inLastOrdenacao IS NULL) THEN
+		
+			SET _inLastOrdenacao = 1000;
+		
+		ELSE
+		
+			SET _inLastOrdenacao = _inLastOrdenacao + 1;
+
+		END IF;
 	
 	ELSE
 	
-		SET _inLastOrdenacao = _inLastOrdenacao + 1;
-
+		SET _inLastOrdenacao = pInOrdernacao;
+	
 	END IF;
 	
 	select count(1) into _inUsuarioFound
 	from TB_CONFIRMACAO_TEMPORADA
 	where ID_TEMPORADA = pIdTemporada
-	and ID_USUARIO = pIdUsu
-	and ID_CAMPEONATO = pIdCampeonato;
+	and ID_CAMPEONATO = pIdCampeonato
+	and ID_USUARIO = pIdUsu;
 	
 	IF (_inUsuarioFound = 0) THEN
 	
-		insert into TB_CONFIRMACAO_TEMPORADA (ID_TEMPORADA, ID_USUARIO, ID_CAMPEONATO, NM_TIME, IN_CONFIRMACAO, IN_ORDENACAO, DT_CONFIRMACAO, IN_CONSOLE, DS_STATUS, DS_DESCRICAO_STATUS)
-		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimeFUT, pInConfirm, _inLastOrdenacao, NOW(), 'PS4', 'AP', 'Aprovada.');
+		insert into TB_CONFIRMACAO_TEMPORADA (ID_TEMPORADA, ID_CAMPEONATO, ID_USUARIO, NM_TIME, IN_CONFIRMACAO, IN_ORDENACAO, DT_CONFIRMACAO, IN_CONSOLE, DS_STATUS, DS_DESCRICAO_STATUS)
+		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimeFUT, pInConfirm, _inLastOrdenacao, CURRENT_DATE(), 'PS4', 'AP', 'Aprovada.');
 	
 	ELSE
 	
 		update TB_CONFIRMACAO_TEMPORADA
 		set NM_TIME = pNmTimeFUT,
 		IN_CONFIRMACAO = pInConfirm,
-		DT_CONFIRMACAO = NOW()
+		DT_CONFIRMACAO = CURRENT_DATE(),
+		IN_ORDENACAO = _inLastOrdenacao
 		where ID_TEMPORADA = pIdTemporada
 		and ID_USUARIO = pIdUsu
 		and ID_CAMPEONATO = pIdCampeonato;
@@ -72,7 +86,7 @@ CREATE PROCEDURE `spAddUpdateConfirmacaoTemporadaPRO`(
 begin
 	DECLARE _inLastOrdenacao INTEGER DEFAULT NULL;
 	DECLARE _inUsuarioFound INTEGER DEFAULT 0;
-
+	
 	select IN_ORDENACAO into _inLastOrdenacao
 	from TB_CONFIRMACAO_TEMPORADA
 	where ID_TEMPORADA = pIdTemporada
@@ -317,18 +331,21 @@ DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllConfirmacaoTemporadaNoFilterCRUD` $$
-CREATE PROCEDURE `spGetAllConfirmacaoTemporadaNoFilterCRUD`(
-	pIdTemporada INTEGER,
-	pIdTemporadaAnt INTEGER
-)
-begin      
-   select * FROM (SELECT C.*, DATE_FORMAT(c.DT_CONFIRMACAO,'%d/%m/%Y') as DT_CONFIRMACAO_FORMATADA, U.NM_Usuario, U.PSN_Id,
-   (SELECT H.PT_TOTAL FROM TB_HISTORICO_TEMPORADA H WHERE H.ID_USUARIO = U.ID_USUARIO ORDER BY H.ID_TEMPORADA desc limit 1) as PT_TOTAL,
-   (SELECT PT_TOTAL FROM TB_LISTA_NEGRA L WHERE L.ID_Temporada = pIdTemporadaAnt AND L.ID_USUARIO = C.ID_USUARIO AND L.PT_TOTAL > 0) as PT_LSTNEGRA
-   from TB_CONFIRMACAO_TEMPORADA C, TB_USUARIO U
-   where C.ID_TEMPORADA = pIdTemporada
-   and C.ID_USUARIO = U.ID_USUARIO) as X
-   order by ID_CAMPEONATO, IN_ORDENACAO, DS_Status, IN_CONFIRMACAO DESC, DT_CONFIRMACAO, PT_TOTAL DESC, NM_Usuario;
+CREATE PROCEDURE `spGetAllConfirmacaoTemporadaNoFilterCRUD`()
+begin
+	DECLARE _idTempNova INTEGER DEFAULT NULL;
+	DECLARE _idTempAtual INTEGER DEFAULT NULL;
+	
+	SET _idTempAtual = fcGetIdTempCurrent();
+	SET _idTempNova = _idTempAtual + 1;
+	
+	select * FROM (SELECT C.*, DATE_FORMAT(c.DT_CONFIRMACAO,'%d/%m/%Y') as DT_CONFIRMACAO_FORMATADA, U.NM_Usuario, U.PSN_Id,
+	(SELECT H.PT_TOTAL FROM TB_HISTORICO_TEMPORADA H WHERE H.ID_USUARIO = U.ID_USUARIO ORDER BY H.ID_TEMPORADA desc limit 1) as PT_TOTAL,
+	(SELECT PT_TOTAL FROM TB_LISTA_NEGRA L WHERE L.ID_Temporada = _idTempAtual AND L.ID_USUARIO = C.ID_USUARIO AND L.PT_TOTAL > 0) as PT_LSTNEGRA
+	from TB_CONFIRMACAO_TEMPORADA C, TB_USUARIO U
+	where C.ID_TEMPORADA = _idTempNova
+	and C.ID_USUARIO = U.ID_USUARIO) as X
+	order by ID_CAMPEONATO, IN_ORDENACAO, DS_Status, IN_CONFIRMACAO DESC, DT_CONFIRMACAO, PT_TOTAL DESC, NM_Usuario;
 End$$
 DELIMITER ;
 

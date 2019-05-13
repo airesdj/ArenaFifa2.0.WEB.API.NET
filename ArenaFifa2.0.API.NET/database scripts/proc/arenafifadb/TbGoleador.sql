@@ -29,10 +29,11 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetGoleadorByGoleador` $$
 CREATE PROCEDURE `spGetGoleadorByGoleador`(pIdGoleador INTEGER)
 begin      
-   select G.*, T.NM_TIME, DATE_FORMAT(G.DT_INSCRICAO,'%d/%m/%Y') as DT_FORMATADA
-   from TB_GOLEADOR G, TB_TIME T
+   select G.*, T.NM_TIME, X.NM_TIPO_TIME, DATE_FORMAT(G.DT_INSCRICAO,'%d/%m/%Y') as DT_FORMATADA
+   from TB_GOLEADOR G, TB_TIME T, TB_TIPO_TIME X
    where ID_GOLEADOR = pIdGoleador
-   and G.ID_TIME = T.ID_TIME;
+   and G.ID_TIME = T.ID_TIME
+   and T.ID_TIPO_TIME = X.ID_TIPO_TIME;
 End$$
 DELIMITER ;
 
@@ -96,7 +97,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllGoleadoresNoFilterCRUDH2H` $$
 CREATE PROCEDURE `spGetAllGoleadoresNoFilterCRUDH2H`()
 begin      
-   select G.*, T.NM_TIME, P.NM_TIPO_TIME
+   select G.*, T.NM_TIME, T.DS_TIPO, P.NM_TIPO_TIME, DATE_FORMAT(G.DT_INSCRICAO,'%d/%m/%Y') as DT_FORMATADA
    from TB_GOLEADOR G, TB_TIME T, TB_TIPO_TIME P
    where T.ID_TIPO_TIME  NOT IN (37,39,40,41,42)
    and G.ID_TIME = T.ID_TIME
@@ -107,25 +108,10 @@ DELIMITER ;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spGetAllGoleadoresWithFilterCRUDFUT` $$
-CREATE PROCEDURE `spGetAllGoleadoresWithFilterCRUDFUT`(pFilter VARCHAR(20))
+DROP PROCEDURE IF EXISTS `spGetAllGoleadoresNoFilterCRUDPRO` $$
+CREATE PROCEDURE `spGetAllGoleadoresNoFilterCRUDPRO`()
 begin      
-   select G.*, T.NM_Time, U.PSN_ID as PSN_MANAGER, U.NM_USUARIO as NM_MANAGER
-   from TB_GOLEADOR G, TB_TIME T, TB_USUARIO U
-   where (G.NM_Goleador like CONCAT('%',pFilter,'%') or G.NM_GOLEADOR_COMPLETO like CONCAT('%',pFilter,'%') or T.NM_TIME like CONCAT('%',pFilter,'%') or U.NM_USUARIO like CONCAT('%',pFilter,'%') or U.PSN_ID like CONCAT('%',pFilter,'%'))
-   and T.ID_TIPO_TIME = 42
-   and G.ID_TIME = T.ID_TIME
-   and T.ID_TECNICO_FUT = U.ID_USUARIO
-   order by G.NM_GOLEADOR, T.NM_TIME;
-End$$
-DELIMITER ;
-
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `spGetAllGoleadoresNoFilterCRUDFUT` $$
-CREATE PROCEDURE `spGetAllGoleadoresNoFilterCRUDFUT`()
-begin      
-   select G.*, T.NM_Time, U.PSN_ID as PSN_MANAGER, U.NM_USUARIO as NM_MANAGER
+   select G.*, T.NM_Time, T.DS_TIPO, U.PSN_ID as PSN_MANAGER, U.NM_USUARIO as NM_MANAGER, DATE_FORMAT(G.DT_INSCRICAO,'%d/%m/%Y') as DT_FORMATADA
    from TB_GOLEADOR G, TB_TIME T, TB_USUARIO U
    where T.ID_TIPO_TIME = 42
    and G.ID_TIME = T.ID_TIME
@@ -187,16 +173,24 @@ CREATE PROCEDURE `spUpdateGoleador`(
 	pIdUsu INTEGER
 )
 begin      
+	DECLARE _userID INTEGER DEFAULT NULL;
+
+	IF pIdUsu IS NULL OR pIdUsu = 0 THEN
+		SET _userID = NULL;
+	ELSE
+		SET _userID = pIdUsu;
+	END IF;
+
 	update TB_GOLEADOR
 	set NM_GOLEADOR = pNmGoleador,
-	ID_Time = pIdTime,
 	NM_GOLEADOR_COMPLETO = pNmCompleto,
 	DS_LINK_IMAGEM = pDsLink,
 	ID_TIME_SOFIFA = pIdSofifa,
 	DS_PAIS = pDsPais,
 	DT_INSCRICAO = NOW(),
-	ID_USUARIO = pIdUsu
-	where ID_GOLEADOR = pIdGoleador;  
+	ID_USUARIO = _userID
+	where ID_GOLEADOR = pIdGoleador
+	AND ID_Time = pIdTime;
 End$$
 DELIMITER ;
 
@@ -204,18 +198,45 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddGoleador` $$
 CREATE PROCEDURE `spAddGoleador`(
-	pIdGoleador INTEGER,
 	pIdTime INTEGER,
 	pNmGoleador VARCHAR(50),
 	pNmCompleto VARCHAR(100),
 	pDsLink VARCHAR(200),
 	pDsPais VARCHAR(80),
 	pIdSofifa INTEGER,
+	pTipo VARCHAR(3),
 	pIdUsu INTEGER
 )
 begin      
+	DECLARE _maxID INTEGER DEFAULT NULL;
+	DECLARE _userID INTEGER DEFAULT NULL;
+
+	IF pTipo = "H2H" THEN
+		select ID_GOLEADOR into _maxID
+		from TB_GOLEADOR
+		WHERE ID_GOLEADOR < 999000
+		order by ID_GOLEADOR desc
+		limit 1;
+	ELSE
+		select ID_GOLEADOR into _maxID
+		from TB_GOLEADOR
+		WHERE ID_GOLEADOR >=999000
+		order by ID_GOLEADOR desc
+		limit 1;
+		
+		IF _maxID IS NULL THEN
+			SET _maxID = 999000;
+		END IF;
+	END IF;
+	
+	IF pIdUsu IS NULL OR pIdUsu = 0 THEN
+		SET _userID = NULL;
+	ELSE
+		SET _userID = pIdUsu;
+	END IF;
+
 	insert into  TB_GOLEADOR  (ID_GOLEADOR, NM_GOLEADOR, ID_Time, NM_GOLEADOR_COMPLETO, DS_LINK_IMAGEM, ID_TIME_SOFIFA, DS_PAIS, DT_INSCRICAO, ID_USUARIO)
-	values (pIdGoleador, pNmGoleador, pIdTime, pNmCompleto, pDsLink, pIdSofifa, pDsPais, NOW(), pIdUsu);
+	values (_maxID, pNmGoleador, pIdTime, pNmCompleto, pDsLink, pIdSofifa, pDsPais, NOW(), _userID);
 End$$
 DELIMITER ;
 

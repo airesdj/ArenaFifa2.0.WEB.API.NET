@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Web.Http;
-using ArenaFifa20.API.NET.Models;
+using static ArenaFifa20.API.NET.Models.UserModel;
 using DBConnection;
 
 namespace ArenaFifa20.API.NET.Controllers
@@ -26,7 +26,7 @@ namespace ArenaFifa20.API.NET.Controllers
                 db.openConnection();
                 var objFunctions = new Commons.functions();
                 Boolean validPasswordLogin = false;
-                UserModel userDetails = new UserModel();
+                UserDetailsModel userDetails = new UserDetailsModel();
                 DataTable dt = null;
                 DataTable dt2 = null;
                 string passwordBase64 = string.Empty;
@@ -312,7 +312,7 @@ namespace ArenaFifa20.API.NET.Controllers
 
                 db.openConnection();
                 var objFunctions = new Commons.functions();
-                UserModel userDetails = new UserModel();
+                UserDetailsModel userDetails = new UserDetailsModel();
                 string passwordBase64 = string.Empty;
                 DataTable dt = null;
 
@@ -441,7 +441,7 @@ namespace ArenaFifa20.API.NET.Controllers
             }
         }
 
-        private void SetDetailsUser(DataTable dt, UserModel userDetails)
+        private void SetDetailsUser(DataTable dt, UserDetailsModel userDetails)
         {
             var row = dt.Rows[0];
 
@@ -509,14 +509,14 @@ namespace ArenaFifa20.API.NET.Controllers
         public IHttpActionResult GetUserDetails(int id)
         {
 
-            UserModel userDetails = new UserModel();
+            UserDetailsModel userDetails = new UserDetailsModel();
             DataTable dt = null;
 
             try
             {
                 if (String.IsNullOrEmpty(Convert.ToString(id)) || id == 0)
                 {
-                    userDetails = new UserModel();
+                    userDetails = new UserDetailsModel();
                     userDetails.returnMessage = "loginFailed";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, userDetails);
 
@@ -535,7 +535,7 @@ namespace ArenaFifa20.API.NET.Controllers
             }
             catch (Exception ex)
             {
-                userDetails = new UserModel();
+                userDetails = new UserDetailsModel();
                 userDetails.returnMessage = "errorGetUser_" + ex.Message;
                 return CreatedAtRoute("DefaultApi", new { id = 0 }, userDetails);
             }
