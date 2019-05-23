@@ -198,6 +198,7 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddGoleador` $$
 CREATE PROCEDURE `spAddGoleador`(
+	pIdGoleador INTEGER,
 	pIdTime INTEGER,
 	pNmGoleador VARCHAR(50),
 	pNmCompleto VARCHAR(100),
@@ -211,13 +212,19 @@ begin
 	DECLARE _maxID INTEGER DEFAULT NULL;
 	DECLARE _userID INTEGER DEFAULT NULL;
 
-	IF pTipo = "H2H" THEN
+	IF pTipo = "H2H" And pIdGoleador = 0 THEN
 		select ID_GOLEADOR into _maxID
 		from TB_GOLEADOR
 		WHERE ID_GOLEADOR < 999000
 		order by ID_GOLEADOR desc
 		limit 1;
-	ELSE
+
+		IF _maxID IS NULL THEN
+			SET _maxID = 1;
+		ELSE
+			SET _maxID = _maxID + 1;
+		END IF;
+	ELSEIF pIdGoleador = 0 THEN
 		select ID_GOLEADOR into _maxID
 		from TB_GOLEADOR
 		WHERE ID_GOLEADOR >=999000
@@ -226,7 +233,11 @@ begin
 		
 		IF _maxID IS NULL THEN
 			SET _maxID = 999000;
+		ELSE
+			SET _maxID = _maxID + 1;
 		END IF;
+	ELSE 
+		SET _maxID = pIdGoleador;
 	END IF;
 	
 	IF pIdUsu IS NULL OR pIdUsu = 0 THEN

@@ -21,13 +21,25 @@ namespace ArenaFifa20.API.NET.Controllers
         public IHttpActionResult postUser(UserDetailsModel model)
         {
 
+            UserDetailsModel modelDetails = new UserDetailsModel();
+            UserViewModel mainModel = new UserViewModel();
+            List<UserDetailsModel> listOfModel = new List<UserDetailsModel>();
+
             db.openConnection();
-            var objFunctions = new Commons.functions();
             DataTable dt = null;
             try
             {
 
                 if(model.actionUser.ToLower() == "dellcrud")
+                {
+                    paramName = new string[] { "pIdUsuario", "pIdUsuarioOperacao", "pPsnUsuarioOperacao", "pDsPaginaOperacao" };
+                    paramValue = new string[] { Convert.ToString(model.id), Convert.ToString(model.idOperator), model.psnIDOperator, model.pageName };
+                    dt = db.executePROC("spDeleteUsuario", paramName, paramValue);
+
+                    model.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser.ToLower() == "dellcrud")
                 {
                     paramName = new string[] { "pIdUsuario", "pIdUsuarioOperacao", "pPsnUsuarioOperacao", "pDsPaginaOperacao" };
                     paramValue = new string[] { Convert.ToString(model.id), Convert.ToString(model.idOperator), model.psnIDOperator, model.pageName };
@@ -147,6 +159,28 @@ namespace ArenaFifa20.API.NET.Controllers
                     }
 
                 }
+                else if (model.actionUser.ToLower() == "getlistmoderator")
+                {
+                    paramName = new string[] {  };
+                    paramValue = new string[] {  };
+                    dt = db.executePROC("spGetAllActivateModeradores", paramName, paramValue);
+
+                    for (var i = 0; i < dt.Rows.Count; i++)
+                    {
+                        modelDetails = new UserDetailsModel();
+                        modelDetails.id = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                        modelDetails.name = dt.Rows[i]["NM_USUARIO"].ToString();
+                        modelDetails.psnID = dt.Rows[i]["PSN_ID"].ToString();
+                        modelDetails.userActive = Convert.ToBoolean(dt.Rows[i]["IN_USUARIO_ATIVO"].ToString());
+                        modelDetails.userModerator = Convert.ToBoolean(dt.Rows[i]["IN_USUARIO_MODERADOR"].ToString());
+
+                        listOfModel.Add(modelDetails);
+                    }
+
+                    mainModel.listOfUser = listOfModel;
+                    mainModel.returnMessage = "ModeratorSuccessfully";
+                    return Ok(mainModel);
+                }
                 else
                 {
                     return StatusCode(HttpStatusCode.NotAcceptable);
@@ -162,6 +196,9 @@ namespace ArenaFifa20.API.NET.Controllers
             {
                 db.closeConnection();
                 dt = null;
+                modelDetails = null;
+                mainModel = null;
+                listOfModel = null;
 
             }
         }

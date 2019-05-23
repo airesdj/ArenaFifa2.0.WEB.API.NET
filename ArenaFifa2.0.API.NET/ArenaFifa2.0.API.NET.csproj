@@ -163,12 +163,21 @@
     <Content Include="database scripts\proc\arenafifadb\TbTransmissaoAoVivo.sql" />
     <Content Include="database scripts\proc\arenafifadb\TbUsuario.sql" />
     <Content Include="database scripts\proc\arenafifadb\TbUsuarioTime.sql" />
+    <Content Include="database scripts\proc\arena_blog\TbBlogModerador.sql" />
+    <Content Include="database scripts\proc\arena_spooler\TbSpooler.sql" />
     <Content Include="database scripts\proc\GenerateNewTemporadaPRO - Copia.sql" />
     <Content Include="Global.asax" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\ChampionshipController.cs" />
+    <Compile Include="Controllers\BlogController.cs" />
+    <Compile Include="Controllers\ChampionshipTeamController.cs" />
+    <Compile Include="Controllers\ChampionshipStageController.cs" />
+    <Compile Include="Controllers\ChampionshipUserController.cs" />
+    <Compile Include="Controllers\ChampionshipTypeController.cs" />
+    <Compile Include="Controllers\TeamTypeController.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\ScorerController.cs" />
     <Compile Include="Controllers\AcceptingNewSeasonController.cs" />
@@ -184,12 +193,19 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\ChampionshipModel.cs" />
+    <Compile Include="Models\ChampionshipTeamModel.cs" />
+    <Compile Include="Models\ChampionshipStageModel.cs" />
+    <Compile Include="Models\ChampionshipUserModel.cs" />
     <Compile Include="Models\ScorerModel.cs" />
     <Compile Include="Models\ModeratorModel.cs" />
     <Compile Include="Models\RankingModel.cs" />
     <Compile Include="Models\HallOfFameModel.cs" />
     <Compile Include="Models\BlackListModel.cs" />
     <Compile Include="Models\AcceptingNewSeasonModel.cs" />
+    <Compile Include="Models\BlogModel.cs" />
+    <Compile Include="Models\ChampionshipTypeModel.cs" />
+    <Compile Include="Models\TeamTypeModel.cs" />
     <Compile Include="Models\TeamModel.cs" />
     <Compile Include="Models\SeasonModel.cs" />
     <Compile Include="Models\BenchModel.cs" />

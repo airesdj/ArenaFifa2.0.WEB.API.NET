@@ -37,8 +37,8 @@ namespace ArenaFifa20.API.NET.Controllers
                     }
                     else
                     {
-                        paramName = new string[] { "pIdTime", "pNmGoleador", "pNmCompleto", "pDsLink", "pDsPais", "pIdSofifa", "pTipo", "pIdUsu" };
-                        paramValue = new string[] { Convert.ToString(model.teamID), model.nickname, model.name, model.link, model.country, model.sofifaTeamID, model.scorerType, Convert.ToString(model.userID)};
+                        paramName = new string[] { "pIdGoleador", "pIdTime", "pNmGoleador", "pNmCompleto", "pDsLink", "pDsPais", "pIdSofifa", "pTipo", "pIdUsu" };
+                        paramValue = new string[] { "0", Convert.ToString(model.teamID), model.nickname, model.name, model.link, model.country, model.sofifaTeamID, model.scorerType, Convert.ToString(model.userID)};
                         dt = db.executePROC("spAddGoleador", paramName, paramValue);
                     }
 

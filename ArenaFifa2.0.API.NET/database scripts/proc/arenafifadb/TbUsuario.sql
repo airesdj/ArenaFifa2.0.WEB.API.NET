@@ -68,12 +68,12 @@ End$$
 DELIMITER ;
 
 DELIMITER $$
-DROP FUNCTION IF EXISTS `fcGetIdUsuariosVazio` $$
-CREATE FUNCTION `fcGetIdUsuariosVazio`() RETURNS VARCHAR(100)
+DROP FUNCTION IF EXISTS `fcGetIdUsuariosVazio_old` $$
+CREATE FUNCTION `fcGetIdUsuariosVazio_old`() RETURNS VARCHAR(100)
 	DETERMINISTIC
 begin
 
-	DECLARE _idUsuarios VARCHAR(100) DEFAULT "";
+	DECLARE _idUsuarios VARCHAR(100) DEFAULT "'";
 	DECLARE _idUsu INTEGER DEFAULT NULL;
 	DECLARE _finished INTEGER DEFAULT 0;
 	
@@ -92,9 +92,9 @@ begin
 			LEAVE get_tabela;
 		END IF;
 
-		IF _idUsuarios <> "" THEN
+		IF _idUsuarios <> "" AND _idUsuarios <> "'" THEN
 		
-			SET _idUsuarios = CONCAT(_idUsuarios, ',');
+			SET _idUsuarios = CONCAT(_idUsuarios, ",");
 		
 		END IF;
 		
@@ -104,7 +104,25 @@ begin
 	
 	CLOSE tabela_cursor;
 	
+	SET _idUsuarios = CONCAT(_idUsuarios, "'");
+	
 	RETURN _idUsuarios;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP FUNCTION IF EXISTS `fcGetIdUsuariosVazio` $$
+CREATE FUNCTION `fcGetIdUsuariosVazio`(pIn_id INT(11), pSelect VARCHAR(3)) RETURNS INT(11)
+	DETERMINISTIC
+begin
+
+	IF pSelect = "IN" THEN
+		RETURN pIn_id IN (select ID_USUARIO from TB_USUARIO where PSN_ID like '%vazio%' order by ID_USUARIO);
+	ELSE
+		RETURN pIn_id NOT IN (select ID_USUARIO from TB_USUARIO where PSN_ID like '%vazio%' order by ID_USUARIO);
+	END IF;
+	
 End$$
 DELIMITER ;
 
@@ -272,6 +290,18 @@ begin
    select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMATADA
    from TB_USUARIO
    where IN_USUARIO_ATIVO = true AND IN_DESEJA_PARTICIPAR = 1
+   order by NM_USUARIO;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllActivateModeradores` $$
+CREATE PROCEDURE `spGetAllActivateModeradores`()
+begin      
+   select *, DATE_FORMAT(DT_ULTIMO_ACESSO,'%d/%m/%Y') as DATA_FORMATADA
+   from TB_USUARIO
+   where ID_USUARIO > 1 AND IN_USUARIO_ATIVO = true AND IN_USUARIO_MODERADOR = true
    order by NM_USUARIO;
 End$$
 DELIMITER ;
