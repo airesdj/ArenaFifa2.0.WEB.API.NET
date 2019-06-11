@@ -8,7 +8,7 @@ CREATE PROCEDURE `spAddHistAltCampeonato`(
 	pIdUsuarioOperacao INTEGER,
 	pTpOperacao VARCHAR(30),
 	pPsnIdOperacao VARCHAR(30),
-	pNmCampAlt VARCHAR(100)
+	pNmCampAlt VARCHAR(100),	
 	pDsPagina VARCHAR(30)
 )
 begin

@@ -5,6 +5,7 @@ using DBConnection;
 using System.Data;
 using System.Net;
 using System.Collections.Generic;
+using System.Configuration;
 
 namespace ArenaFifa20.API.NET.Controllers
 {
@@ -18,7 +19,6 @@ namespace ArenaFifa20.API.NET.Controllers
         [HttpPost]
         public IHttpActionResult blackList(BlackListViewModel model)
         {
-
 
             db.openConnection();
             DataTable dt = null;
@@ -46,7 +46,62 @@ namespace ArenaFifa20.API.NET.Controllers
                     SetBlackListDetailsSeason(dt, model);
 
                     bActionUser = true;
+                }
 
+                else if (model.actionUser == "delete_by_match")
+                {
+                    paramName = new string[] { "pIdJogo" };
+                    paramValue = new string[] { model.matchID.ToString() };
+                    dt = db.executePROC("spRemoveListaNegraByJogo", paramName, paramValue);
+
+                    if (dt.Rows.Count > 0)
+                    {
+                        model.messageBlackList = dt.Rows[0]["DSC_COMENTARIO_RETIRADA_LISTA_NEGRA"].ToString();
+
+                    }
+                    bActionUser = true;
+                }
+                else if (model.actionUser == "add_by_match")
+                {
+                    paramName = new string[] { "pIdTemp", "pIdCamp", "pIdUsu", "pIdJogo", "pSgTpListaNegra" };
+                    paramValue = new string[] { model.seasonID.ToString(), model.championshipID.ToString(), model.userID.ToString(), model.matchID.ToString(), model.messageBlackList };
+                    dt = db.executePROC("spAddListaNegra", paramName, paramValue);
+
+                    bActionUser = true;
+                }
+                else if (model.actionUser == "get_by_match_user")
+                {
+                    paramName = new string[] { "pIdUsu", "pIdJogo" };
+                    paramValue = new string[] { model.userID.ToString(), model.matchID.ToString() };
+                    dt = db.executePROC("spGetListaNegraDetalheByJogo", paramName, paramValue);
+
+                    if (dt.Rows.Count == 0)
+                    {
+                        model.valueBlackList = 0;
+                        model.messageBlackList = String.Empty;
+
+                    }
+                    else if (Convert.ToInt16(dt.Rows[0]["IN_ADVERTENCIAS"].ToString())==1) {
+                        model.valueBlackList = Convert.ToInt16(ConfigurationManager.AppSettings["black.list.warning"].ToString());
+                        model.messageBlackList = "Advertência<br>(" + dt.Rows[0]["PT_NEGATIVO"].ToString() + " ponto negativo)";
+                    }
+                    else if (Convert.ToInt16(dt.Rows[0]["IN_OMISSAO_PARCIAL"].ToString()) == 1)
+                    {
+                        model.valueBlackList = Convert.ToInt16(ConfigurationManager.AppSettings["black.list.partial.omission"].ToString());
+                        model.messageBlackList = "Omissão Parcial<br>(" + dt.Rows[0]["PT_NEGATIVO"].ToString() + " pontos negativos)";
+                    }
+                    else if (Convert.ToInt16(dt.Rows[0]["IN_ANTIDESPORTIVA"].ToString()) == 1)
+                    {
+                        model.valueBlackList = Convert.ToInt16(ConfigurationManager.AppSettings["black.list.unsportsmanlike"].ToString());
+                        model.messageBlackList = "Atitude Antidesportiva<br>(" + dt.Rows[0]["PT_NEGATIVO"].ToString() + " pontos negativos)";
+                    }
+                    else if (Convert.ToInt16(dt.Rows[0]["IN_OMISSAO_TOTAL"].ToString()) == 1)
+                    {
+                        model.valueBlackList = Convert.ToInt16(ConfigurationManager.AppSettings["black.list.total.omission"].ToString());
+                        model.messageBlackList = "Omissão Total<br>(" + dt.Rows[0]["PT_NEGATIVO"].ToString() + " pontos negativos)";
+                    }
+
+                    bActionUser = true;
                 }
 
                 if (bActionUser)
@@ -65,13 +120,11 @@ namespace ArenaFifa20.API.NET.Controllers
                 model = new BlackListViewModel();
                 model.returnMessage = "error_" + ex.Message;
                 return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
-
             }
             finally
             {
                 db.closeConnection();
                 dt = null;
-
             }
 
         }
@@ -88,7 +141,7 @@ namespace ArenaFifa20.API.NET.Controllers
             for (var i = 0; i < dt.Rows.Count; i++)
             {
                 summaryDetails = new BlackListSummary();
-                summaryDetails.userID = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                summaryDetails.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
                 summaryDetails.psnID = dt.Rows[i]["PSN_ID"].ToString();
                 summaryDetails.nameUser = dt.Rows[i]["NM_USUARIO"].ToString();
                 summaryDetails.noWarning = Convert.ToInt16(dt.Rows[i]["QT_ADVERTENCIAS"].ToString());

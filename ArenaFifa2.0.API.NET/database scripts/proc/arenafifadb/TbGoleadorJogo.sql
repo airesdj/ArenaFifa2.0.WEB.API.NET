@@ -37,6 +37,8 @@ begin
 	DECLARE _idGols VARCHAR(3) DEFAULT NULL;
 	DECLARE strDelimiter CHAR(1) DEFAULT ',';
 	
+	call spDeleteAllGoleadorJogo (pIdJogo);
+
 	select ID_TIME_CASA, ID_TIME_VISITANTE into _idTimeHome, _idTimeAway
 	from TB_TABELA_JOGO
 	where ID_CAMPEONATO = pIdCamp
@@ -51,16 +53,16 @@ begin
 		SET _nextGoleador = SUBSTRING_INDEX(pIdsGoleadorHome,strDelimiter,1);
 		SET _nextGols = SUBSTRING_INDEX(pQtGolsGoleadorHome,strDelimiter,1);
 		
-		SET _nextlenGoleador = LENGTH(_nextGoleador);
-		SET _nextlenGols = LENGTH(_nextGols);
-		
 		SET _idGoleador = TRIM(_nextGoleador);
 		SET _idGols = TRIM(_nextGols);
+		
+		SET _nextlenGoleador = LENGTH(_idGoleador);
+		#SET _nextlenGols = LENGTH(_idGols);
 		
 		call spAddGoleadorJogo (pIdCamp, pIdJogo, _idTimeHome, CAST(_idGoleador AS SIGNED), CAST(_idGols AS SIGNED));
 		
 		SET pIdsGoleadorHome = INSERT(pIdsGoleadorHome,1,_nextlenGoleador + 1,'');
-		SET pQtGolsGoleadorHome = INSERT(pQtGolsGoleadorHome,1,_nextlenGoleador + 1,'');
+		SET pQtGolsGoleadorHome = INSERT(pQtGolsGoleadorHome,1,LENGTH(_idGols) + 1,'');
 	END LOOP;
 
 	iterator:
@@ -72,16 +74,16 @@ begin
 		SET _nextGoleador = SUBSTRING_INDEX(pIdsGoleadorAway,strDelimiter,1);
 		SET _nextGols = SUBSTRING_INDEX(pQtGolsGoleadorAway,strDelimiter,1);
 		
-		SET _nextlenGoleador = LENGTH(_nextGoleador);
-		SET _nextlenGols = LENGTH(_nextGols);
-		
 		SET _idGoleador = TRIM(_nextGoleador);
 		SET _idGols = TRIM(_nextGols);
+		
+		SET _nextlenGoleador = LENGTH(_idGoleador);
+		#SET _nextlenGols = LENGTH(_idGols);
 		
 		call spAddGoleadorJogo (pIdCamp, pIdJogo, _idTimeAway, CAST(_idGoleador AS SIGNED), CAST(_idGols AS SIGNED));
 		
 		SET pIdsGoleadorAway = INSERT(pIdsGoleadorAway,1,_nextlenGoleador + 1,'');
-		SET pQtGolsGoleadorAway = INSERT(pQtGolsGoleadorAway,1,_nextlenGoleador + 1,'');
+		SET pQtGolsGoleadorAway = INSERT(pQtGolsGoleadorAway,1,LENGTH(_idGols) + 1,'');
 	END LOOP;
 End$$
 DELIMITER ;
@@ -101,6 +103,17 @@ End$$
 DELIMITER ;
 
 
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spDeleteAllGoleadorJogo` $$
+CREATE PROCEDURE `spDeleteAllGoleadorJogo`(
+	pIdJogo INTEGER
+)
+begin      
+	delete from TB_GOLEADOR_JOGO 
+	where ID_TABELA_JOGO = pIdJogo;
+End$$
+DELIMITER ;
+
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spDeleteLoadGoleadorJogo` $$
@@ -108,7 +121,7 @@ CREATE PROCEDURE `spDeleteLoadGoleadorJogo`(
 	pIdCamp INTEGER,
 	pIdJogo INTEGER,
 	pIdsGoleadorHome VARCHAR(250),
-	pIdsGoleadorAway VARCHAR(250),
+	pIdsGoleadorAway VARCHAR(250)
 )
 begin      
 	DECLARE _idTimeHome INTEGER DEFAULT NULL;
@@ -196,31 +209,41 @@ begin
 End$$
 DELIMITER ;
 
+
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllGoleadoresByJogo` $$
-CREATE PROCEDURE `spGetAllGoleadoresByJogo`(pIdCamp INTEGER, pIdTimeHome INTEGER, pIdTimeAway INTEGER, pIdJogo INTEGER)
+CREATE PROCEDURE `spGetAllGoleadoresByJogo`(pIdCamp INTEGER, pIdJogo INTEGER)
 begin      
-	SELECT G.NM_GOLEADOR, J.QT_GOLS, 'Home' TP_TIME FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J
-	WHERE J.ID_CAMPEONATO = pIdCamp AND J.ID_TABELA_JOGO = pIdJogo AND J.ID_TIME = pIdTimeHome
-	AND J.ID_GOLEADOR = G.ID_GOLEADOR AND J.ID_TIME = G.ID_TIME
+	DECLARE _idTimeHome INTEGER DEFAULT NULL;
+	DECLARE _idTimeAway INTEGER DEFAULT NULL;
+	
+	SELECT ID_TIME_CASA, ID_TIME_VISITANTE into _idTimeHome, _idTimeAway
+	FROM TB_TABELA_JOGO WHERE ID_TABELA_JOGO = pIdJogo;
+
+	SELECT G.ID_GOLEADOR, T.ID_TIME, T.NM_TIME, T.DS_Tipo, G.NM_GOLEADOR_COMPLETO, G.NM_GOLEADOR, J.QT_GOLS, 'Home' as TP_TIME 
+	FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J, TB_TIME T
+	WHERE J.ID_TABELA_JOGO = pIdJogo AND J.ID_CAMPEONATO = pIdCamp AND J.ID_TIME = _idTimeHome
+	AND J.ID_GOLEADOR = G.ID_GOLEADOR AND J.ID_TIME = G.ID_TIME AND G.ID_TIME = T.ID_TIME AND J.ID_TIME = T.ID_TIME
 	UNION ALL
-	SELECT G.NM_GOLEADOR, J.QT_GOLS, 'Home' TP_TIME FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J
-	WHERE J.ID_CAMPEONATO = pIdCamp AND J.ID_TABELA_JOGO = pIdJogo AND J.ID_TIME = pIdTimeHome
-	AND G.ID_GOLEADOR = 0 AND G.ID_TIME = 0
-	AND J.ID_GOLEADOR = G.ID_GOLEADOR
+	SELECT G.ID_GOLEADOR, T.ID_TIME, T.NM_TIME, T.DS_Tipo, G.NM_GOLEADOR_COMPLETO, G.NM_GOLEADOR, J.QT_GOLS, 'Home' as TP_TIME 
+	FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J, TB_TIME T
+	WHERE J.ID_TABELA_JOGO = pIdJogo AND J.ID_CAMPEONATO = pIdCamp 
+	AND G.ID_GOLEADOR = 0 AND G.ID_TIME = 0 AND J.ID_TIME = _idTimeHome
+	AND J.ID_GOLEADOR = G.ID_GOLEADOR AND J.ID_TIME = G.ID_TIME AND G.ID_TIME = T.ID_TIME AND J.ID_TIME = T.ID_TIME
 	UNION ALL
-	SELECT G.NM_GOLEADOR, J.QT_GOLS, 'Away' TP_TIME FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J
-	WHERE J.ID_CAMPEONATO = pIdCamp AND J.ID_TABELA_JOGO = pIdJogo AND J.ID_TIME = pIdTimeAway
-	AND J.ID_GOLEADOR = G.ID_GOLEADOR AND J.ID_TIME = G.ID_TIME
+	SELECT G.ID_GOLEADOR, T.ID_TIME, T.NM_TIME, T.DS_Tipo, G.NM_GOLEADOR_COMPLETO, G.NM_GOLEADOR, J.QT_GOLS, 'Away' as TP_TIME 
+	FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J, TB_TIME T
+	WHERE J.ID_TABELA_JOGO = pIdJogo AND J.ID_CAMPEONATO = pIdCamp AND J.ID_TIME = _idTimeAway
+	AND J.ID_GOLEADOR = G.ID_GOLEADOR AND J.ID_TIME = G.ID_TIME AND G.ID_TIME = T.ID_TIME AND J.ID_TIME = T.ID_TIME
 	UNION ALL
-	SELECT G.NM_GOLEADOR, J.QT_GOLS, 'Away' TP_TIME FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J
-	WHERE J.ID_CAMPEONATO = pIdCamp AND J.ID_TABELA_JOGO = pIdJogo AND J.ID_TIME = pIdTimeAway
-	AND G.ID_GOLEADOR = 0 AND G.ID_TIME = 0
-	AND J.ID_GOLEADOR = G.ID_GOLEADOR
+	SELECT G.ID_GOLEADOR, T.ID_TIME, T.NM_TIME, T.DS_Tipo, G.NM_GOLEADOR_COMPLETO, G.NM_GOLEADOR, J.QT_GOLS, 'Away' as TP_TIME 
+	FROM TB_GOLEADOR G, TB_GOLEADOR_JOGO J, TB_TIME T
+	WHERE J.ID_TABELA_JOGO = pIdJogo AND J.ID_CAMPEONATO = pIdCamp 
+	AND G.ID_GOLEADOR = 0 AND G.ID_TIME = 0 AND J.ID_TIME = _idTimeAway
+	AND J.ID_GOLEADOR = G.ID_GOLEADOR AND J.ID_TIME = G.ID_TIME AND G.ID_TIME = T.ID_TIME AND J.ID_TIME = T.ID_TIME
 	ORDER BY TP_TIME, NM_GOLEADOR;
 End$$
 DELIMITER ;
-
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetLoadAllGoleadores` $$

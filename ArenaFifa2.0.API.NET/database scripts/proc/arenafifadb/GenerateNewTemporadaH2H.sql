@@ -1459,7 +1459,7 @@ Begin
 	#Retirando SEM Técnicos das Séries
 	DELETE FROM TB_CAMPEONATO_USUARIO WHERE ID_CAMPEONATO IN (pIdSerieA, pIdSerieB, pIdSerieC)
 	AND ID_USUARIO = (SELECT U.ID_USUARIO FROM TB_USUARIO U
-	WHERE U.ID_USUARIO IN (fcGetIdUsuariosVazio()) ORDER BY U.ID_USUARIO);
+	WHERE fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT') ORDER BY U.ID_USUARIO);
 	
 
 	#Retirando técnicos que ultrapassaram o limite de pontos negativos nas Séries

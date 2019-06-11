@@ -64,7 +64,7 @@ namespace ArenaFifa20.API.NET.Controllers
                         userDetails.totalVices= Convert.ToInt16(dt2.Rows[0]["TOTAL_VICES"].ToString());
 
 
-                        if (userDetails.password.ToString() == userDetails.password20.ToString())
+                        if (userDetails.password.ToString() != userDetails.password20.ToString() && userDetails.password20.ToString() == String.Empty)
                         {
 
                             validPasswordLogin = objFunctions.validateOldEncryptionPassword(userDetails.password.ToString(), user.password, Convert.ToInt16(userDetails.id.ToString()));

@@ -21,9 +21,10 @@ namespace ArenaFifa20.API.NET.Controllers
         public IHttpActionResult postRequest(ScorerDetails model)
         {
 
+            ScorerViewModel mainModel = new ScorerViewModel();
             db.openConnection();
-            var objFunctions = new Commons.functions();
             DataTable dt = null;
+
             try
             {
 
@@ -45,6 +46,26 @@ namespace ArenaFifa20.API.NET.Controllers
                     model.returnMessage = "ModeratorSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
+                else if (model.actionUser == "getListOfScorerByTeam")
+                {
+                    paramName = new string[] { "pIdTime" };
+                    paramValue = new string[] { Convert.ToString(model.teamID) };
+                    dt = db.executePROC("spGetAllGoleadorByTime", paramName, paramValue);
+
+                    mainModel.listOfScorer = setUpListDetailsScorers(dt);
+                    mainModel.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
+                }
+                else if (model.actionUser == "getListOfScorerByMatchTeam")
+                {
+                    paramName = new string[] { "pIdJogo", "pIdTime" };
+                    paramValue = new string[] { Convert.ToString(model.id), Convert.ToString(model.teamID) };
+                    dt = db.executePROC("spGetGoleadorGolsOfTime", paramName, paramValue);
+
+                    mainModel.listOfScorer = setUpListDetailsScorers(dt);
+                    mainModel.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
+                }
                 else
                 {
                     return StatusCode(HttpStatusCode.NotAcceptable);
@@ -60,6 +81,7 @@ namespace ArenaFifa20.API.NET.Controllers
             {
                 db.closeConnection();
                 dt = null;
+                mainModel = null;
 
             }
         }
@@ -70,7 +92,6 @@ namespace ArenaFifa20.API.NET.Controllers
 
             ScorerDetails modelDetails = new ScorerDetails();
             ScorerViewModel mainModel = new ScorerViewModel();
-            List<ScorerDetails> listOfModel = new List<ScorerDetails>();
             DataTable dt = null;
             db.openConnection();
 
@@ -120,28 +141,7 @@ namespace ArenaFifa20.API.NET.Controllers
 
                     mainModel.scorerType = id;
 
-                    for (var i = 0; i < dt.Rows.Count; i++)
-                    {
-                        modelDetails = new ScorerDetails();
-                        modelDetails.id = Convert.ToInt32(dt.Rows[i]["ID_GOLEADOR"].ToString());
-                        modelDetails.teamID = Convert.ToInt16(dt.Rows[i]["ID_TIME"].ToString());
-                        modelDetails.teamName = dt.Rows[i]["NM_TIME"].ToString();
-                        modelDetails.teamType = dt.Rows[i]["DS_TIPO"].ToString();
-                        modelDetails.DateSubscriptionFormatted = dt.Rows[i]["DT_FORMATADA"].ToString();
-                        modelDetails.nickname = dt.Rows[i]["NM_GOLEADOR"].ToString();
-                        modelDetails.name = dt.Rows[i]["NM_GOLEADOR_COMPLETO"].ToString();
-                        modelDetails.country = dt.Rows[i]["DS_PAIS"].ToString();
-                        if (!String.IsNullOrEmpty(dt.Rows[i]["ID_TIME_SOFIFA"].ToString()))
-                            modelDetails.sofifaTeamID = dt.Rows[i]["ID_TIME_SOFIFA"].ToString();
-                        modelDetails.rating = dt.Rows[i]["IN_RATING"].ToString();
-                        if (!String.IsNullOrEmpty(dt.Rows[i]["ID_USUARIO"].ToString()))
-                            modelDetails.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
-                        if (!String.IsNullOrEmpty(dt.Rows[i]["DT_INSCRICAO"].ToString()))
-                            modelDetails.DateSubscription = Convert.ToDateTime(dt.Rows[i]["DT_INSCRICAO"].ToString());
-                        listOfModel.Add(modelDetails);
-                    }
-
-                    mainModel.listOfScorer = listOfModel;
+                    mainModel.listOfScorer = setUpListDetailsScorers(dt);
                     mainModel.returnMessage = "ModeratorSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
                 }
@@ -158,10 +158,47 @@ namespace ArenaFifa20.API.NET.Controllers
                 modelDetails = null;
                 dt = null;
                 mainModel = null;
-                listOfModel = null;
             }
 
         }
 
+        private List<ScorerDetails> setUpListDetailsScorers(DataTable dt)
+        {
+            List<ScorerDetails> oList = new List<ScorerDetails>();
+            ScorerDetails modelDetails = new ScorerDetails();
+            try
+            {
+                for (var i = 0; i < dt.Rows.Count; i++)
+                {
+                    modelDetails = new ScorerDetails();
+                    modelDetails.id = Convert.ToInt32(dt.Rows[i]["ID_GOLEADOR"].ToString());
+                    modelDetails.teamID = Convert.ToInt16(dt.Rows[i]["ID_TIME"].ToString());
+                    modelDetails.teamName = dt.Rows[i]["NM_TIME"].ToString();
+                    modelDetails.teamType = dt.Rows[i]["DS_TIPO"].ToString();
+                    modelDetails.DateSubscriptionFormatted = dt.Rows[i]["DT_FORMATADA"].ToString();
+                    modelDetails.nickname = dt.Rows[i]["NM_GOLEADOR"].ToString();
+                    modelDetails.name = dt.Rows[i]["NM_GOLEADOR_COMPLETO"].ToString();
+                    modelDetails.country = dt.Rows[i]["DS_PAIS"].ToString();
+                    if (!String.IsNullOrEmpty(dt.Rows[i]["ID_TIME_SOFIFA"].ToString()))
+                        modelDetails.sofifaTeamID = dt.Rows[i]["ID_TIME_SOFIFA"].ToString();
+                    modelDetails.rating = dt.Rows[i]["IN_RATING"].ToString();
+                    if (!String.IsNullOrEmpty(dt.Rows[i]["ID_USUARIO"].ToString()))
+                        modelDetails.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
+                    if (!String.IsNullOrEmpty(dt.Rows[i]["DT_INSCRICAO"].ToString()))
+                        modelDetails.DateSubscription = Convert.ToDateTime(dt.Rows[i]["DT_INSCRICAO"].ToString());
+                    oList.Add(modelDetails);
+                }
+                return oList;
+            }
+            catch
+            {
+                return new List<ScorerDetails>();
+            }
+            finally
+            {
+                oList = null;
+                modelDetails = null;
+            }
+        }
     }
 }

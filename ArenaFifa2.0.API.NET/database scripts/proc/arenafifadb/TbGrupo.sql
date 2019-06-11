@@ -39,6 +39,18 @@ End$$
 DELIMITER ;
 
 
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllGrupoOfCampeonato` $$
+CREATE PROCEDURE `spGetAllGrupoOfCampeonato`(pIdCamp INTEGER)
+Begin
+    SELECT * FROM `TB_GRUPO` 
+	where ID_CAMPEONATO = pIdCamp
+	ORDER BY ID_GRUPO;
+End$$
+DELIMITER ;
+
+
+
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddLoadGrupoOfCampeonato` $$

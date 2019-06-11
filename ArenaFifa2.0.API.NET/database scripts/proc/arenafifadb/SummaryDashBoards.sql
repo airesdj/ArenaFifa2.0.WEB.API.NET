@@ -200,7 +200,7 @@ begin
 	
 	SELECT COUNT(1) into _activeCoaches
 	FROM TB_USUARIO
-	WHERE ID_USUARIO NOT IN(fcGetIdUsuariosVazio())
+	WHERE fcGetIdUsuariosVazio(ID_USUARIO,'NOT')
 	AND IN_USUARIO_ATIVO = True AND IN_DESEJA_PARTICIPAR = 1;
 	
 	SELECT COUNT(1) into _seasonCoaches

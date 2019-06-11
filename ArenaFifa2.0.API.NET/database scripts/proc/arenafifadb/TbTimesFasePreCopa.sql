@@ -49,6 +49,9 @@ Begin
 	DECLARE _nextlen INTEGER DEFAULT NULL;
 	DECLARE _idTime VARCHAR(5) DEFAULT NULL;
 	DECLARE strDelimiter CHAR(1) DEFAULT ',';
+	
+	call `arenafifadb`.`spDeleteAllTimesFasePreCopaOfCampeonato`(pIdCamp);
+	
 	iterator:
 	LOOP
 		IF LENGTH(TRIM(pIdsTime)) = 0 OR pIdsTime IS NULL THEN

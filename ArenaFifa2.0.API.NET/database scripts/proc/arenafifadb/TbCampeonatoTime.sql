@@ -57,6 +57,16 @@ DELIMITER ;
 
 
 DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllTimesOfCampeonato` $$
+CREATE PROCEDURE `spGetAllTimesOfCampeonato`(pIdCamp INTEGER)
+begin      
+   select ID_TIME, NM_TIME, DS_TIPO from TB_TIME where ID_TIME in (select ID_TIME from TB_CAMPEONATO_TIME where ID_CAMPEONATO = pIdCamp) order by NM_TIME;      
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllTimesOfCampeonatoOrdemTime` $$
 CREATE PROCEDURE `spGetAllTimesOfCampeonatoOrdemTime`(pIdCamp INTEGER)
 begin      
@@ -90,6 +100,9 @@ Begin
 	DECLARE _nextlen INTEGER DEFAULT NULL;
 	DECLARE _idTime VARCHAR(5) DEFAULT NULL;
 	DECLARE strDelimiter CHAR(1) DEFAULT ',';
+	
+	call `arenafifadb`.`spDeleteAllCampeonatoTimeOfCampeonato`(pIdCamp);
+	
 	iterator:
 	LOOP
 		IF LENGTH(TRIM(pIdsTime)) = 0 OR pIdsTime IS NULL THEN
@@ -116,29 +129,14 @@ DROP PROCEDURE IF EXISTS `spAddLoadCampeonatoTimeOfCampeonatoByName` $$
 CREATE PROCEDURE `spAddLoadCampeonatoTimeOfCampeonatoByName`(    
     pIdCamp INTEGER,     
     pListaTimes VARCHAR(250),
-	pTpTime VARCHAR(3)
+	pTpTime VARCHAR(10)
 )
 Begin
 	DECLARE _nmTime VARCHAR(5) DEFAULT NULL;
+	DECLARE _finished INTEGER DEFAULT 0;
 	DECLARE _idTime INTEGER DEFAULT NULL;
-	
-	IF (pListaTimes="H2H") THEN
-	
-		DECLARE tabela_cursor CURSOR FOR 
-			SELECT ID_TIME FROM TB_TIME WHERE NM_TIME IN (pListaTimes) AND DS_TIPO NOT IN('FUT','PRO') ORDER BY NM_TIME;
-
-	ELSEIF (pListaTimes="FUT") THEN
-
-		DECLARE tabela_cursor CURSOR FOR 
-			SELECT ID_TIME FROM TB_TIME WHERE NM_TIME IN (pListaTimes) AND DS_TIPO IN('FUT') ORDER BY NM_TIME;
-
-	ELSEIF (pListaTimes="PRO") THEN
-	
-		DECLARE tabela_cursor CURSOR FOR 
-			SELECT ID_TIME FROM TB_TIME WHERE NM_TIME IN (pListaTimes) AND DS_TIPO IN('PRO') ORDER BY NM_TIME;
-
-	END IF;
-		
+	DECLARE tabela_cursor CURSOR FOR 
+		SELECT ID_TIME FROM TB_TIME WHERE NM_TIME IN (pListaTimes) AND DS_TIPO NOT IN(pTpTime) ORDER BY NM_TIME;
 	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
 
 	OPEN tabela_cursor;
@@ -161,39 +159,4 @@ DELIMITER ;
 
 
 
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `spAddCampeonatoTimeByTipo` $$
-CREATE PROCEDURE `spAddCampeonatoTimeByTipo`(
-	pIdCamp INTEGER,
-	pTpTime VARCHAR(3)
-)
-Begin
-	DECLARE _idTime INTEGER DEFAULT NULL;
-	DECLARE _finished INTEGER DEFAULT 0;
-	DECLARE _inOrdem INTEGER DEFAULT 0;
-	
-	DECLARE tabela_cursor CURSOR FOR 
-	SELECT ID_TIME FROM TB_TIME WHERE NM_TIME IN (pListaTimes) AND DS_TIPO IN(pTpTime) ORDER BY NM_TIME;
-	
-	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
-
-	OPEN tabela_cursor;
-	
-	get_tabela: LOOP
-	
-		FETCH tabela_cursor INTO _idTime;
-		
-		IF _finished = 1 THEN
-			LEAVE get_tabela;
-		END IF;
-
-		INSERT INTO TB_CAMPEONATO_TIME (ID_CAMPEONATO, ID_TIME) VALUES (_idCamp, _idTime);
-		
-	END LOOP get_tabela;
-	
-	CLOSE tabela_cursor;
-
-End$$
-DELIMITER ;
 

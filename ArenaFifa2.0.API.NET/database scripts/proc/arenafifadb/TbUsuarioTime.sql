@@ -44,13 +44,7 @@ begin
 	
 	insert into TB_USUARIO_TIME (ID_CAMPEONATO, ID_USUARIO, ID_TIME, DT_SORTEIO)
 	values (pIdCamp, pIdUsuNew, pIdTime, now());
-
-	select U.*, (CONCAT(T.NM_Time, ' (', T.DS_TIPO, ')')) as DSC_TIME
-	from TB_USUARIO_TIME U, TB_TIME T
-	where U.ID_TIME = T.ID_TIME
-	and U.ID_CAMPEONATO = pIdCamp
-	and U.ID_USUARIO = pIdUsuNew
-	and U.DT_VIGENCIA_FIM is null;      
+   
 End$$
 DELIMITER ;
 
@@ -59,14 +53,14 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spUpdateUsuarioTimeNewUsuario` $$
 CREATE PROCEDURE `spUpdateUsuarioTimeNewUsuario`(    
 	pIdCamp INTEGER,
-	pIdUsu INTEGER,
-	pIdTimeOld INTEGER,
+	pIdUsuOld INTEGER,
+	pIdUsuNew INTEGER,
 	pIdTimeNew INTEGER
 )
 Begin
     update `TB_USUARIO_TIME` 
-	set ID_TIME = pIdTimeNew, ID_USUARIO = pIdUsu
-	where ID_CAMPEONATO = pIdCamp and ID_USUARIO = pIdTimeOld;
+	set ID_TIME = pIdTimeNew, ID_USUARIO = pIdUsuNew
+	where ID_CAMPEONATO = pIdCamp and ID_USUARIO = pIdUsuOld;
 End$$
 DELIMITER ;
 
@@ -314,5 +308,358 @@ begin
 	
 	CLOSE tabela_cursor;
 	
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spDoUserExchange` $$
+CREATE PROCEDURE `spDoUserExchange`(
+	pTpCamp VARCHAR(5),
+	pIdUsuIN INTEGER,
+	pNmUsuIN VARCHAR(50),
+	pPsnIDIN VARCHAR(30),
+	pIdUsuOUT INTEGER,
+	pIdTipoAcesso INTEGER,
+	pPsnUsuOperacao VARCHAR(30),
+	pIdUsuarioOperacao INTEGER,
+	pDsPaginaOperacao VARCHAR(30)
+)
+begin
+	DECLARE _finished INTEGER DEFAULT 0;
+	DECLARE _IdTimeIN INTEGER;
+	DECLARE _IdTimeOUT INTEGER;
+	DECLARE _idTemp INTEGER DEFAULT NULL;
+	DECLARE _nmTime VARCHAR(80);
+	DECLARE _dsTipo VARCHAR(5);
+	DECLARE _IdCamp INTEGER;
+	DECLARE _NmCamp VARCHAR(50);
+	DECLARE _SgCamp VARCHAR(5);
+	DECLARE _SgCampAux VARCHAR(50);
+	DECLARE _idPreviousTemp INTEGER DEFAULT NULL;
+	DECLARE _CommentarioJogo LONGTEXT DEFAULT "";
+	
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
+
+	SET _idTemp = fcGetIdTempCurrent();
+
+	IF pTpCamp = 'DIV1' OR pTpCamp = 'DIV2' OR pTpCamp = 'DIV3' OR pTpCamp = 'DIV4' THEN
+	
+		SET _idPreviousTemp = fcGetIdTempPrevious();
+
+		IF pTpCamp = 'DIV1' OR pTpCamp = 'DIV2' THEN
+			SET _SgCampAux = "'CPGL'";
+		ELSE
+			SET _SgCampAux = "'CPSA'";
+		END IF;
+	
+		begin
+			DECLARE tabela_cursor CURSOR FOR
+			SELECT ID_CAMPEONATO, NM_CAMPEONATO, SG_TIPO_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _idTemp
+			AND SG_TIPO_CAMPEONATO IN (pTpCamp) AND IN_CAMPEONATO_GRUPO = False
+			UNION ALL
+			SELECT ID_CAMPEONATO, NM_CAMPEONATO, SG_TIPO_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _idTemp
+			AND SG_TIPO_CAMPEONATO IN (_SgCampAux) AND IN_CAMPEONATO_GRUPO = True
+			UNION ALL
+			SELECT ID_CAMPEONATO, NM_CAMPEONATO, SG_TIPO_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _idTemp
+			AND SG_TIPO_CAMPEONATO IN ('CPGL') AND IN_CAMPEONATO_GRUPO = False
+			ORDER BY ID_CAMPEONATO;
+
+	
+			OPEN tabela_cursor;
+				
+				get_tabela: LOOP
+				
+					FETCH tabela_cursor INTO _IdCamp, _NmCamp, _SgCamp;
+					
+					IF _finished = 1 THEN
+						LEAVE get_tabela;
+					END IF;
+					
+				SET _IdTimeOUT =	fcGetIdTimeByUsuario(_IdCamp, pIdUsuOUT);
+				
+				SELECT NM_Time, DS_TIPO into _nmTime, _dsTipo
+				FROM TB_TIME WHERE ID_TIME = _IdTimeOUT;
+				
+				SET _nmTime = CONCAT(_nmTime, " (", _dsTipo, ")");
+				
+				SET _CommentarioJogo = CONCAT("Seguem os dados do novo técnico do ", _nmTime, ":");
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<br><br>");
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<b>", pNmUsuIN, " (", pPsnIDIN, ")</b>");
+				
+				call `arenafifadb`.`spTransferUsuarioTimeToNewUsuario`(_IdCamp, _IdTimeOUT, pIdUsuOUT, pIdUsuIN);
+				
+				call `arenafifadb`.`spUpdateCampeonatoUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN, pPsnUsuOperacao, pIdUsuarioOperacao, pDsPaginaOperacao);
+					
+				call `arenafifadb`.`spUpdateComentarioUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN);
+					
+				call `arenafifadb`.`spAddHistoricoTemporadaH2H`(_idPreviousTemp, pIdUsuIN, pIdTipoAcesso);
+
+				call `arenafifadb`.`spUpdateOrdenaHistoricoTempH2H`(_idPreviousTemp);
+				
+				IF pTpCamp = 'DIV3' OR pTpCamp = 'DIV4' THEN
+				
+					call `arenafifadb`.`spUpdateToEndBancoReserva`(pIdUsuIN, 'H2H');
+				
+				END IF;
+				
+				call `arenafifadb`.`spAddAllComentarioJogoByTime`(_IdCamp, _IdTimeOUT, pIdUsuarioOperacao, _CommentarioJogo);
+
+				END LOOP get_tabela;
+				
+			CLOSE tabela_cursor;
+            
+            SELECT _nmTime as NM_TIME;
+
+		End;
+		
+	ELSEIF pTpCamp = 'FUT1' OR pTpCamp = 'FUT2' THEN
+
+		begin
+			DECLARE tabela_cursor CURSOR FOR
+			SELECT ID_CAMPEONATO, NM_CAMPEONATO, SG_TIPO_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _idTemp
+			AND SG_TIPO_CAMPEONATO IN ('FUT1', 'FUT2', 'CFUT')
+			ORDER BY ID_CAMPEONATO;
+
+	
+			OPEN tabela_cursor;
+				
+				get_tabela: LOOP
+				
+					FETCH tabela_cursor INTO _IdCamp, _NmCamp, _SgCamp;
+					
+					IF _finished = 1 THEN
+						LEAVE get_tabela;
+					END IF;
+					
+				SET _IdTimeOUT =	fcGetIdTimeByUsuario(_IdCamp, pIdUsuOUT);
+				
+				IF pTpCamp = 'FUT1' OR pTpCamp = 'FUT2' THEN
+				
+					SELECT B.NM_TIME_FUT into _nmTime
+					FROM TB_LISTA_BANCO_RESERVA B
+					WHERE B.ID_USUARIO = pIdUsuIN AND B.TP_BANCO_RESERVA = 'FUT'
+					AND B.IN_CONSOLE = 'PS4' AND B.DT_FIM IS NULL;
+				
+					SELECT T.ID_TIME into _IdTimeIN
+					FROM TB_TIME T WHERE UCASE(T.NM_TIME) IN (UCASE(_nmTime))
+					AND T.DS_TIPO = 'FUT' ORDER BY T.ID_TIME DESC LIMIT 1;
+					
+					IF _IdTimeIN IS NULL THEN
+					
+						call `arenafifadb`.`spAddTime`(_nmTime, '...', 37, 0, pIdUsuIN);
+					
+						SELECT T.ID_TIME into _IdTimeIN
+						FROM TB_TIME T WHERE ID_TECNICO_FUT = pIdUsuIN
+						AND T.DS_TIPO = 'FUT' ORDER BY T.ID_TIME DESC LIMIT 1;
+						
+					END IF;
+					
+				END IF;
+				
+				SET _CommentarioJogo = CONCAT("Seguem os dados do técnico substituto:");
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<br><br>");
+				SET _CommentarioJogo = CONCAT("<b>Nome do Time: ", _nmTime);
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<br><br>");
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "Novo Técnico: ", pNmUsuIN, " (", pPsnIDIN, ")</b>");
+				
+				call `arenafifadb`.`spUpdateCampeonatoTimeNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+				
+				call `arenafifadb`.`spUpdateClassificacaoNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+				
+				call `arenafifadb`.`spUpdateCampeonatoUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN, pPsnUsuOperacao, pIdUsuarioOperacao, pDsPaginaOperacao);
+					
+				call `arenafifadb`.`spUpdateComentarioUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN);
+					
+				call `arenafifadb`.`spUpdateUsuarioTimeNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN, _IdTimeIN);
+				
+				call `arenafifadb`.`spUpdateTimesFasePreCopaNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+
+				call `arenafifadb`.`spUpdateTabelaJogoNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+
+				IF pTpCamp = 'FUT1' OR pTpCamp = 'FUT2' THEN
+				
+					call `arenafifadb`.`spUpdateToEndBancoReserva`(pIdUsuIN, 'FUT');
+				
+				END IF;
+				
+				call `arenafifadb`.`spAddAllComentarioJogoByTime`(_IdCamp, _IdTimeIN, pIdUsuarioOperacao, _CommentarioJogo);
+
+				END LOOP get_tabela;
+				
+			CLOSE tabela_cursor;
+            
+            SELECT _nmTime as NM_TIME;
+
+		End;
+
+	ELSEIF pTpCamp = 'PRO1' OR pTpCamp = 'PRO2' THEN
+	
+		begin
+			DECLARE tabela_cursor CURSOR FOR
+			SELECT ID_CAMPEONATO, NM_CAMPEONATO, SG_TIPO_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _idTemp
+			AND SG_TIPO_CAMPEONATO IN ('PRO1', 'PRO2', 'CPRO')
+			ORDER BY ID_CAMPEONATO;
+
+	
+			OPEN tabela_cursor;
+			
+				get_tabela: LOOP
+				
+					FETCH tabela_cursor INTO _IdCamp, _NmCamp, _SgCamp;
+					
+					IF _finished = 1 THEN
+						LEAVE get_tabela;
+					END IF;
+					
+				SET _IdTimeOUT =	fcGetIdTimeByUsuario(_IdCamp, pIdUsuOUT);
+				
+				IF pTpCamp = 'PRO1' OR pTpCamp = 'PRO2' THEN
+				
+					SELECT B.NM_TIME_FUT into _nmTime
+					FROM TB_LISTA_BANCO_RESERVA B
+					WHERE B.ID_USUARIO = pIdUsuIN AND B.TP_BANCO_RESERVA = 'PRO'
+					AND B.IN_CONSOLE = 'PS4' AND B.DT_FIM IS NULL;
+				
+					SELECT T.ID_TIME into _IdTimeIN
+					FROM TB_TIME T WHERE UCASE(T.NM_TIME) IN (UCASE(_nmTime))
+					AND T.DS_TIPO = 'PRO' ORDER BY T.ID_TIME DESC LIMIT 1;
+					
+					IF _IdTimeIN IS NULL THEN
+					
+						call `arenafifadb`.`spAddTime`(_nmTime, '...', 42, 0, pIdUsuIN);
+					
+						SELECT T.ID_TIME into _IdTimeIN
+						FROM TB_TIME T WHERE ID_TECNICO_FUT = pIdUsuIN
+						AND T.DS_TIPO = 'PRO' ORDER BY T.ID_TIME DESC LIMIT 1;
+						
+					END IF;
+					
+				END IF;
+				
+				SET _CommentarioJogo = CONCAT("Seguem os dados do clube substituto:");
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<br><br>");
+				SET _CommentarioJogo = CONCAT("<b>Nome do Clube: ", _nmTime);
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<br><br>");
+				SET _CommentarioJogo = CONCAT(_CommentarioJogo, "Manager: ", pNmUsuIN, " (", pPsnIDIN, ")</b>");
+				
+				call `arenafifadb`.`spUpdateCampeonatoTimeNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+				
+				call `arenafifadb`.`spUpdateClassificacaoNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+				
+				call `arenafifadb`.`spUpdateCampeonatoUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN, pPsnUsuOperacao, pIdUsuarioOperacao, pDsPaginaOperacao);
+					
+				call `arenafifadb`.`spUpdateComentarioUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN);
+					
+				call `arenafifadb`.`spUpdateUsuarioTimeNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN, _IdTimeIN);
+				
+				call `arenafifadb`.`spUpdateTimesFasePreCopaNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+
+				call `arenafifadb`.`spUpdateTabelaJogoNewTime`(_IdCamp, _IdTimeOUT, _IdTimeIN);
+
+				IF pTpCamp = 'PRO1' OR pTpCamp = 'PRO2' THEN
+				
+					call `arenafifadb`.`spUpdateToEndBancoReserva`(pIdUsuIN, 'PRO');
+				
+				END IF;
+				
+				call `arenafifadb`.`spAddAllComentarioJogoByTime`(_IdCamp, _IdTimeIN, pIdUsuarioOperacao, _CommentarioJogo);
+
+				END LOOP get_tabela;
+				
+			CLOSE tabela_cursor;
+            
+            SELECT _nmTime as NM_TIME;
+
+		End;
+
+	END IF;
+	
+	
+End$$
+DELIMITER ;
+
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spDoMangerExchange` $$
+CREATE PROCEDURE `spDoMangerExchange`(
+	pTpCamp VARCHAR(5),
+	pIdUsuIN INTEGER,
+	pNmUsuIN VARCHAR(50),
+	pPsnIDIN VARCHAR(30),
+	pIdUsuOUT INTEGER,
+	pPsnUsuOperacao VARCHAR(30),
+	pIdUsuarioOperacao INTEGER,
+	pDsPaginaOperacao VARCHAR(30)
+)
+begin
+	DECLARE _finished INTEGER DEFAULT 0;
+	DECLARE _IdTimeOUT INTEGER;
+	DECLARE _idTemp INTEGER DEFAULT NULL;
+	DECLARE _nmTime VARCHAR(80);
+	DECLARE _dsTipo VARCHAR(5);
+	DECLARE _IdCamp INTEGER;
+	DECLARE _NmCamp VARCHAR(50);
+	DECLARE _SgCamp VARCHAR(5);
+	DECLARE _SgCampAux VARCHAR(50);
+	DECLARE _CommentarioJogo LONGTEXT DEFAULT "";
+	
+	DECLARE tabela_cursor CURSOR FOR
+	SELECT ID_CAMPEONATO, NM_CAMPEONATO, SG_TIPO_CAMPEONATO FROM TB_CAMPEONATO WHERE ID_TEMPORADA = _idTemp
+	AND SG_TIPO_CAMPEONATO IN ('PRO1', 'PRO2', 'CPRO')
+	ORDER BY ID_CAMPEONATO;
+
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
+
+	SET _idTemp = fcGetIdTempCurrent();
+
+	OPEN tabela_cursor;
+	
+		get_tabela: LOOP
+		
+			FETCH tabela_cursor INTO _IdCamp, _NmCamp, _SgCamp;
+			
+			IF _finished = 1 THEN
+				LEAVE get_tabela;
+			END IF;
+			
+			SET _IdTimeOUT =	fcGetIdTimeByUsuario(_IdCamp, pIdUsuOUT);
+			
+			SELECT NM_Time, DS_TIPO into _nmTime, _dsTipo
+			FROM TB_TIME WHERE ID_TIME = _IdTimeOUT;
+			
+			#SET _nmTime = CONCAT(_nmTime, " (", _dsTipo, ")");
+			
+			SET _CommentarioJogo = CONCAT("Seguem os dados do novo técnico do ", _nmTime, ":");
+			SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<br><br>");
+			SET _CommentarioJogo = CONCAT(_CommentarioJogo, "<b>", pNmUsuIN, " (", pPsnIDIN, ")</b>");
+			
+			call `arenafifadb`.`spUpdateCampeonatoUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN, pPsnUsuOperacao, pIdUsuarioOperacao, pDsPaginaOperacao);
+				
+			call `arenafifadb`.`spUpdateComentarioUsuarioNewUsuario`(_IdCamp, pIdUsuOUT, pIdUsuIN);
+				
+			call `arenafifadb`.`spTransferUsuarioTimeToNewUsuario`(_IdCamp, _IdTimeOUT, pIdUsuOUT, pIdUsuIN);
+			
+			call `arenafifadb`.`spTransferTimeNewTecnico`(pIdUsuIN, _IdTimeOUT);
+			
+			IF pTpCamp = 'PRO1' OR pTpCamp = 'PRO2' THEN
+			
+				call `arenafifadb`.`spUpdateToEndBancoReserva`(pIdUsuIN, 'PRO');
+			
+			END IF;
+			
+			call `arenafifadb`.`spAddGoleador`(0, _IdTimeOUT, pPsnIDIN, pNmUsuIN, '...', 'PRO CLUB', 0, 'PRO', pIdUsuIN);
+
+			call `arenafifadb`.`spAddAllComentarioJogoByTime`(_IdCamp, _IdTimeOUT, pIdUsuarioOperacao, _CommentarioJogo);
+			
+		END LOOP get_tabela;
+		
+	CLOSE tabela_cursor;
+	
+	SELECT _nmTime as NM_TIME;
+
 End$$
 DELIMITER ;

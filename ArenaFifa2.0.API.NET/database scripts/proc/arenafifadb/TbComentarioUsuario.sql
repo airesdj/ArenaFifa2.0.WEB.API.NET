@@ -12,6 +12,21 @@ Begin
 End$$
 DELIMITER ;
 
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spDeleteComentarioUsuario` $$
+CREATE PROCEDURE `spDeleteComentarioUsuario`(    
+    pIdTab INTEGER,     
+    pIdCamp INTEGER,     
+    pIdUsu INTEGER
+)
+Begin
+	DELETE FROM TB_COMENTARIO_USUARIO 
+	WHERE ID_TABELA_JOGO = pIdTab
+	  AND ID_CAMPEONATO = pIdCamp
+	  AND ID_USUARIO = pIdUsu;
+End$$
+DELIMITER ;
+
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spUpdateComentarioUsuarioNewUsuario` $$
@@ -77,4 +92,17 @@ Begin
 End$$
 DELIMITER ;
 
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllComentarioUsuarioByJogo` $$
+CREATE PROCEDURE `spGetAllComentarioUsuarioByJogo`(    
+    pIdJogo INTEGER
+)
+Begin
+	SELECT T.*, U.NM_USUARIO, U.PSN_ID, 'airesdj37@gmail.com' as DS_EMAIL
+	  FROM TB_COMENTARIO_USUARIO T, TB_USUARIO U, TB_TIME I
+	WHERE T.ID_TABELA_JOGO = pIdJogo
+	  AND T.ID_USUARIO = U.ID_USUARIO;
+End$$
+DELIMITER ;
 

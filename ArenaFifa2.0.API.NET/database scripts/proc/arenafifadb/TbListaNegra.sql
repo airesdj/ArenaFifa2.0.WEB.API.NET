@@ -12,7 +12,7 @@ Begin
 	And C.ID_Temporada = pIdTemp And C.SG_TIPO_CAMPEONATO in (pTpCamp) limit 1) as NM_Divisao
 	FROM TB_LISTA_NEGRA L, TB_USUARIO U 
 	WHERE L.ID_Temporada = pIdTemp
-	AND U.ID_USUARIO NOT IN (fcGetIdUsuariosVazio())
+	AND fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
 	AND L.PT_TOTAL > 0
 	AND L.ID_Usuario = U.ID_Usuario
 	ORDER BY L.PT_TOTAL Desc, U.NM_Usuario;
@@ -34,6 +34,49 @@ begin
 End$$
 DELIMITER ;
 
+DELIMITER $$
+DROP FUNCTION IF EXISTS `fcGetListaNegraByJogo` $$
+CREATE FUNCTION `fcGetListaNegraByJogo`(pIdJogo INTEGER, pGolsCasa INTEGER, pGolsVisitante INTEGER) RETURNS VARCHAR(10)
+	DETERMINISTIC
+begin
+
+	DECLARE _exist INTEGER DEFAULT NULL;
+	DECLARE _return VARCHAR(10) DEFAULT "";
+	
+	IF pGolsCasa IS NULL THEN
+	
+		SET _return = "";
+	
+	ELSE
+	
+		IF pGolsCasa > 0 OR pGolsVisitante > 0 THEN
+		
+			SELECT count(1) into _exist FROM TB_GOLEADOR_JOGO WHERE ID_Tabela_Jogo = pIdJogo;
+
+			IF _exist = 0 THEN
+			
+				SET _return = "(WO)";
+			
+			END IF;
+		
+		ELSE
+		
+			SELECT count(1) into _exist FROM TB_LISTA_NEGRA_DETALHE WHERE ID_Tabela_Jogo = pIdJogo;
+		
+			IF _exist > 0 THEN
+			
+				SET _return = "(WO)";
+			
+			END IF;
+		
+		END IF;
+	
+	END IF;
+	
+	RETURN _return;
+End$$
+DELIMITER ;
+
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetListaNegraSummaryByTemporada` $$
@@ -43,7 +86,7 @@ Begin
 	SELECT L.*, U.PSN_ID, U.NM_USUARIO, DATE_FORMAT(fcGetDtUpdateListaNegraTemporada(pIdTemp),'%d/%m/%Y') as DT_FORMATADA, T.NM_TEMPORADA
 	FROM TB_LISTA_NEGRA L, TB_USUARIO U, TB_TEMPORADA T
 	WHERE L.ID_Temporada = pIdTemp
-	AND U.ID_USUARIO NOT IN (fcGetIdUsuariosVazio())
+	AND fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
 	AND L.PT_TOTAL > 0
 	AND L.ID_Usuario = U.ID_Usuario
 	AND L.ID_Temporada = T.ID_Temporada
@@ -81,7 +124,7 @@ Begin
 	(SELECT N.PT_TOTAL FROM TB_LISTA_NEGRA N WHERE N.ID_Temporada = fcGetIdTempCurrent()
 	AND N.ID_USUARIO = U.ID_USUARIO) as TOTAL_TEMP
 	FROM TB_LISTA_NEGRA L, TB_USUARIO U 
-	WHERE U.ID_USUARIO NOT IN (fcGetIdUsuariosVazio())
+	WHERE fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
 	AND L.PT_TOTAL > 0
 	AND L.ID_Usuario = U.ID_Usuario GROUP BY U.PSN_ID, U.NM_Usuario, U.ID_Usuario) as X
 	WHERE X.TOTAL_GERAL > 5
@@ -112,7 +155,7 @@ Begin
 	FROM TB_LISTA_NEGRA L, TB_USUARIO U, (SELECT DISTINCT T.ID_Usuario, C.NM_Campeonato FROM TB_Campeonato C, TB_CAMPEONATO_USUARIO T WHERE C.Id_Campeonato = T.Id_Campeonato
 	And C.ID_Temporada = pIdTemp And C.SG_TIPO_CAMPEONATO in (pTpCamp)) X
 	WHERE L.ID_Temporada = pIdTemp
-	AND U.ID_USUARIO NOT IN (fcGetIdUsuariosVazio())
+	AND fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
 	AND L.PT_TOTAL > 11
 	AND X.NM_Campeonato IS NOT NULL
 	AND L.ID_Usuario = U.ID_Usuario
@@ -147,7 +190,7 @@ CREATE PROCEDURE `spDeleteListaNegraVazio`(pIdTemp INTEGER)
 Begin
 	DELETE FROM TB_LISTA_NEGRA
 	WHERE Id_Temporada = pIdTemp
-	AND IPT_TOTAL = 0;
+	AND PT_TOTAL = 0;
 End$$
 DELIMITER ;
 
@@ -156,7 +199,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spRemoveListaNegraByJogo` $$
 CREATE PROCEDURE `spRemoveListaNegraByJogo`(pIdJogo INTEGER)
 Begin
-	DECLARE _MsgRetorno VARCHAR(100) DEFAULT "";
+	DECLARE _MsgRetorno VARCHAR(250) DEFAULT "";
 	DECLARE _PsnID VARCHAR(30) DEFAULT NULL;
 	DECLARE _idTempCurrent INTEGER DEFAULT NULL;
 	DECLARE _QtdGolsHome INTEGER DEFAULT NULL;
@@ -173,40 +216,44 @@ Begin
 		SET _idTempCurrent = fcGetIdTempCurrent();
 		
 		SELECT count(1) into _CountAux FROM TB_LISTA_NEGRA_DETALHE 
-		WHERE C.ID_CAMPEONATO = _IdCamp AND ID_TABELA_JOGO = pIdJogo;
+		WHERE ID_CAMPEONATO = _IdCamp AND ID_TABELA_JOGO = pIdJogo;
 		
 		IF (_CountAux = 2) THEN
 		
 			SET _MsgRetorno = "Atenção Senhores técnicos, <br><br>          <b>A pontuação negativa de ambos os técnicos, referente a esta partida, foi retirada.</b>";
 		
-			call `arenafifadb`.`spDeleteListaNegra`(_idTempCurrent, _IdCamp, _IdUsuHome, pIdJogo);
-			call `arenafifadb`.`spDeleteListaNegra`(_idTempCurrent, _IdCamp, _IdUsuAway, pIdJogo);
-		
+			call `arenafifadb`.`spDeleteListaNegraDetalhe`(_idTempCurrent, _IdCamp, _IdUsuHome, pIdJogo);
+			call `arenafifadb`.`spDeleteListaNegraDetalhe`(_idTempCurrent, _IdCamp, _IdUsuAway, pIdJogo);
+			call `arenafifadb`.`spCalculateListaNegra`(_idTempCurrent, _IdUsuHome);
+			call `arenafifadb`.`spCalculateListaNegra`(_idTempCurrent, _IdUsuAway);
+
 		ELSEIF (_CountAux = 1) THEN
 		
 			SELECT U.psn_id into _PsnID FROM TB_LISTA_NEGRA_DETALHE C, TB_USUARIO U 
-			WHERE C.ID_TEMPORADA = _idTempCurrent AND C.ID_CAMPEONATO = _IdCamp AND C.ID_USUARIO = _IdUsuHome AND C.ID_TABELA_JOGO = pIdJogo;
+			WHERE C.ID_TEMPORADA = _idTempCurrent AND C.ID_CAMPEONATO = _IdCamp AND C.ID_USUARIO = _IdUsuHome AND C.ID_TABELA_JOGO = pIdJogo AND C.ID_USUARIO = U.ID_USUARIO LIMIT 1;
 			
 			IF (_PsnID IS NOT NULL) THEN 
 			
 				SET _MsgRetorno = CONCAT("Atenção Técnico ", _PsnID);
 				SET _MsgRetorno = CONCAT(_MsgRetorno, ", <br><br>          <b>A sua pontuação negativa, referente a esta partida, foi retirada.</b>");
 			
-				call `arenafifadb`.`spDeleteListaNegra`(_idTempCurrent, _IdCamp, _IdUsuHome, pIdJogo);
+				call `arenafifadb`.`spDeleteListaNegraDetalhe`(_idTempCurrent, _IdCamp, _IdUsuHome, pIdJogo);
+				call `arenafifadb`.`spCalculateListaNegra`(_idTempCurrent, _IdUsuHome);
 			
 			ELSE
 			
 				SET _PsnID = NULL;
 
 				SELECT U.psn_id into _PsnID FROM TB_LISTA_NEGRA_DETALHE C, TB_USUARIO U 
-				WHERE C.ID_TEMPORADA = _idTempCurrent AND C.ID_CAMPEONATO = _IdCamp AND C.ID_USUARIO = _IdUsuAway AND C.ID_TABELA_JOGO = pIdJogo;
+				WHERE C.ID_TEMPORADA = _idTempCurrent AND C.ID_CAMPEONATO = _IdCamp AND C.ID_USUARIO = _IdUsuAway AND C.ID_TABELA_JOGO = pIdJogo AND C.ID_USUARIO = U.ID_USUARIO LIMIT 1;
 				
 				IF (_PsnID IS NOT NULL) THEN 
 				
 					SET _MsgRetorno = CONCAT("Atenção Técnico ", _PsnID);
 					SET _MsgRetorno = CONCAT(_MsgRetorno, ", <br><br>          <b>A sua pontuação negativa, referente a esta partida, foi retirada.</b>");
 				
-					call `arenafifadb`.`spDeleteListaNegra`(_idTempCurrent, _IdCamp, _IdUsuAway, pIdJogo);
+					call `arenafifadb`.`spDeleteListaNegraDetalhe`(_idTempCurrent, _IdCamp, _IdUsuAway, pIdJogo);
+					call `arenafifadb`.`spCalculateListaNegra`(_idTempCurrent, _IdUsuAway);
 				
 				END IF;
 				
@@ -224,8 +271,8 @@ DELIMITER ;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spAddListaNegraDetalhe` $$
-CREATE PROCEDURE `spAddListaNegraDetalhe`(
+DROP PROCEDURE IF EXISTS `spAddListaNegra` $$
+CREATE PROCEDURE `spAddListaNegra`(
     pIdTemp INTEGER,     
     pIdCamp INTEGER,     
     pIdUsu INTEGER,     
@@ -239,6 +286,12 @@ Begin
 	DECLARE _PT_OMISSAO_PARCIAL_LN INTEGER DEFAULT 2;
 	DECLARE _PT_ANTIDESPORTIVA_LN INTEGER DEFAULT 3;
 	DECLARE _PT_OMISSAO_TOTAL_LN INTEGER DEFAULT 4;
+	
+	IF pIdTemp = 0 THEN
+	
+		SET pIdTemp = fcGetIdTempCurrent();
+	
+	END IF;
 
 	IF (pSgTpListaNegra = "LN_ADV") THEN
 	
@@ -259,16 +312,18 @@ Begin
 		INSERT INTO TB_LISTA_NEGRA_DETALHE (ID_TEMPORADA, ID_CAMPEONATO, ID_USUARIO, ID_TABELA_JOGO, 
 											IN_ADVERTENCIAS, IN_OMISSAO_PARCIAL, IN_OMISSAO_TOTAL, IN_ANTIDESPORTIVA, PT_NEGATIVO, DT_ATUALIZACAO)
 		VALUES (pIdTemp, pIdCamp, pIdUsu, pIdJogo, 
-				0, 0, 1, 0, _PT_ANTIDESPORTIVA_LN, NOW());
+				0, 0, 0, 1, _PT_ANTIDESPORTIVA_LN, NOW());
 
 	ELSEIF (pSgTpListaNegra = "LN_OMT") THEN
 	
 		INSERT INTO TB_LISTA_NEGRA_DETALHE (ID_TEMPORADA, ID_CAMPEONATO, ID_USUARIO, ID_TABELA_JOGO, 
 											IN_ADVERTENCIAS, IN_OMISSAO_PARCIAL, IN_OMISSAO_TOTAL, IN_ANTIDESPORTIVA, PT_NEGATIVO, DT_ATUALIZACAO)
 		VALUES (pIdTemp, pIdCamp, pIdUsu, pIdJogo, 
-				0, 0, 0, 1, _PT_OMISSAO_TOTAL_LN, NOW());
+				0, 0, 1, 0, _PT_OMISSAO_TOTAL_LN, NOW());
 
 	END IF;
+	
+	call `arenafifadb`.`spCalculateListaNegra`(pIdTemp, pIdUsu);
 
 End$$
 DELIMITER ;
@@ -288,6 +343,7 @@ Begin
 	DECLARE _QtdOMT INTEGER DEFAULT 0;
 	DECLARE _QtdANT INTEGER DEFAULT 0;
 	DECLARE _QtdTotal INTEGER DEFAULT NULL;
+	DECLARE _exist INTEGER DEFAULT NULL;
 	
 	SELECT count(1) into _QtdADV
 	FROM TB_LISTA_NEGRA_DETALHE
@@ -318,6 +374,25 @@ Begin
 	WHERE Id_Temporada = pIdTemp
 	AND ID_Usuario = pIdUsu;
 	
+	SELECT count(1) into _exist
+	FROM TB_LISTA_NEGRA_DETALHE
+	WHERE Id_Temporada = pIdTemp
+	AND ID_Usuario = pIdUsu;
+	
+	IF _exist IS NULL THEN
+		INSERT INTO TB_LISTA_NEGRA (ID_TEMPORADA, ID_USUARIO, QT_ADVERTENCIAS, QT_OMISSAO_PARCIAL, QT_OMISSAO_TOTAL, PT_TOTAL, QT_ANTIDESPORTIVA)
+		VALUES (pIdTemp, pIdUsu, _QtdADV, _QtdOMP, _QtdOMT, _QtdTotal, _QtdANT);
+	ELSE
+		UPDATE TB_LISTA_NEGRA
+		SET QT_ADVERTENCIAS = _QtdADV,
+		    QT_OMISSAO_PARCIAL = _QtdOMP,
+			QT_OMISSAO_TOTAL = _QtdOMT,
+			PT_TOTAL = _QtdTotal,
+			QT_ANTIDESPORTIVA = _QtdANT
+		WHERE Id_Temporada = pIdTemp
+		AND ID_Usuario = pIdUsu;
+	END IF;
+	
 	call `arenafifadb`.`spDeleteListaNegraVazio`(pIdTemp);
 
 End$$
@@ -328,16 +403,12 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetListaNegraDetalheByJogo` $$
 CREATE PROCEDURE `spGetListaNegraDetalheByJogo`(    
     pIdUsu INTEGER,     
-    pTpJogo  INTEGER
+    pIdJogo  INTEGER
 )
 Begin
-	DECLARE _idTempCurrent INTEGER DEFAULT NULL;
-	
-	SET _idTempCurrent = fcGetIdTempCurrent();
-
 	SELECT *
 	FROM TB_LISTA_NEGRA_DETALHE
-	WHERE Id_Temporada = _idTempCurrent
+	WHERE Id_Temporada = fcGetIdTempCurrent()
 	AND ID_Usuario = pIdUsu
 	AND ID_Tabela_Jogo = pIdJogo
 	LIMIT 1;

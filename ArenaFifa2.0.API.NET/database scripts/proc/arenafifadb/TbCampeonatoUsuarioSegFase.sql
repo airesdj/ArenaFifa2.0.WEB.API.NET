@@ -84,7 +84,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllUsuariosSegFaseOfCampeonato` $$
 CREATE PROCEDURE `spGetAllUsuariosSegFaseOfCampeonato`(pIdCamp INTEGER)
 begin      
-   select ID_USUARIO, NM_USUARIO from TB_USUARIO where ID_USUARIO in (select ID_USUARIO from TB_CAMPEONATO_USUARIO_SEG_FASE where ID_CAMPEONATO = pIdCamp) order by NM_USUARIO;      
+   select ID_USUARIO, NM_USUARIO, PSN_ID from TB_USUARIO where ID_USUARIO in (select ID_USUARIO from TB_CAMPEONATO_USUARIO_SEG_FASE where ID_CAMPEONATO = pIdCamp) order by NM_USUARIO;      
 End$$
 DELIMITER ;
 
@@ -139,6 +139,9 @@ Begin
 	DECLARE _nextlen INTEGER DEFAULT NULL;
 	DECLARE _idUsu VARCHAR(5) DEFAULT NULL;
 	DECLARE strDelimiter CHAR(1) DEFAULT ',';
+	
+	call `arenafifadb`.`spDeleteAllCampeonatoUsuarioSegFaseOfCampeonato`(pIdCamp);
+	
 	iterator:
 	LOOP
 		IF LENGTH(TRIM(pIdsUsu)) = 0 OR pIdsUsu IS NULL THEN

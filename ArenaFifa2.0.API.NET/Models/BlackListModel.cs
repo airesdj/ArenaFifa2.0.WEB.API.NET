@@ -11,12 +11,16 @@ namespace ArenaFifa20.API.NET.Models
         {
             public int seasonID { get; set; }
             public int userID { get; set; }
+            public int matchID { get; set; }
+            public int championshipID { get; set; }
             public string psnID { get; set; }
             public string nameUser { get; set; }
             public string seasonName { get; set; }
             public List<BlackListSummary> listSummary { get; set; }
             public List<BlackListDetails> listDetails { get; set; }
             public string dtUpdateFormated { get; set; }
+            public string messageBlackList { get; set; }
+            public int valueBlackList { get; set; }
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
@@ -31,6 +35,8 @@ namespace ArenaFifa20.API.NET.Models
             public int noPartialOmission { get; set; }
             public int noUnsportsmanlike { get; set; }
             public int total { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
         }
 
         public class BlackListDetails
@@ -47,6 +53,8 @@ namespace ArenaFifa20.API.NET.Models
             public int noUnsportsmanlike { get; set; }
             public int valueBlackList { get; set; }
             public DateTime dtUpdate { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
         }
 
 

@@ -29,7 +29,7 @@ CREATE PROCEDURE `spAddUpdateResultadoLancado`(
 	pTpLanc VARCHAR(15),
 	pIdCamp INTEGER,
 	pDsDtLanc VARCHAR(50),
-	pNmCamp VARCHAR(50),
+	pNmCamp VARCHAR(80),
 	pDsResult VARCHAR(100),
 	pDsJogo VARCHAR(100),
 	pDsExecutor VARCHAR(100)
