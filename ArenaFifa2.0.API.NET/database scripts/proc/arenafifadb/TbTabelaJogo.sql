@@ -128,7 +128,8 @@ CREATE PROCEDURE `spAddTabelaJogo`(
     pIdTimeCasa INTEGER,
     pIdTimeVisit INTEGER,
 	pNumJogoPlayoff INTEGER,
-	pIdaVolta TINYINT
+	pIdaVolta TINYINT,
+	pInPlayoffMatch TINYINT
 )
 Begin
 	DECLARE _inNumRodIda INTEGER DEFAULT 1;
@@ -138,7 +139,7 @@ Begin
 	DECLARE _dtInicioVolta DATE DEFAULT NULL;
 	DECLARE _dtFimVolta DATE DEFAULT NULL;
 	
-	IF pIdaVolta = true THEN
+	IF pInPlayoffMatch = true THEN
 		SET _count = pNumJogoPlayoff;
 	ELSE
 		SET _inNumRodIda = pInNumRodada;
@@ -452,7 +453,7 @@ Begin
 		and J.ID_TIME_VISITANTE = TC2.ID_TIME  
 		and J.ID_CAMPEONATO = TC1.ID_CAMPEONATO  
 		and J.ID_CAMPEONATO = TC2.ID_CAMPEONATO  
-		order by J.ID_FASE, TC1.ID_Grupo, J.DT_TABELA_INICIO_JOGO, J.DS_HORA_JOGO, J.ID_TABELA_JOGO;
+		order by J.ID_FASE, J.IN_NUMERO_RODADA, J.IN_JOGO_MATAXMATA, TC1.ID_Grupo, J.ID_TABELA_JOGO;
 	
 	ELSE
 	

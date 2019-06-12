@@ -359,14 +359,6 @@ DELIMITER ;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spGetAllFasePorCampeonato` $$
-CREATE PROCEDURE `spGetAllFasePorCampeonato`(pIdCamp INTEGER)
-begin      
-   select ID_FASE, NM_FASE from TB_FASE where ID_FASE in (select ID_FASE from TB_FASE_CAMPEONATO where ID_CAMPEONATO = pIdCamp) order by ID_FASE;      
-End$$
-DELIMITER ;
-
-DELIMITER $$
 DROP PROCEDURE IF EXISTS `spDeleteAllFaseOfCampeonato` $$
 CREATE PROCEDURE `spDeleteAllFaseOfCampeonato`(pIdCamp INTEGER)
 Begin

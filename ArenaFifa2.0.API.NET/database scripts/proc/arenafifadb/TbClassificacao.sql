@@ -1,6 +1,139 @@
 USE `arenafifadb`;
 
 DELIMITER $$
+DROP FUNCTION IF EXISTS `fcGetPositionByTime` $$
+CREATE FUNCTION `fcGetPositionByTime`(pIdCamp INTEGER, pIdTime INTEGER) RETURNS INTEGER
+	DETERMINISTIC
+begin
+	DECLARE _position INTEGER DEFAULT NULL;
+	DECLARE _finished INTEGER DEFAULT 0;
+	DECLARE _teamID INTEGER DEFAULT 0;
+
+	DECLARE tabela_cursor CURSOR FOR 
+	select C.ID_TIME
+	from TB_CLASSIFICACAO C
+	where C.ID_CAMPEONATO = pIdCamp
+	order by C.ID_GRUPO, C.QT_PONTOS_GANHOS desc, C.QT_VITORIAS desc, (C.QT_GOLS_PRO-C.QT_GOLS_CONTRA) desc, C.QT_GOLS_PRO desc, C.QT_GOLS_CONTRA;
+
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
+
+	SET _position = 1;
+	
+	OPEN tabela_cursor;
+	
+	get_tabela: LOOP
+	
+		FETCH tabela_cursor INTO _teamID;
+		
+		IF _finished = 1 THEN
+			LEAVE get_tabela;
+		END IF;
+		
+		IF _teamID = pIdTime THEN
+			LEAVE get_tabela;
+		END IF;
+		
+		SET _position = _position + 1;
+		
+	END LOOP get_tabela;
+	
+	CLOSE tabela_cursor;
+	
+	RETURN _position;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP FUNCTION IF EXISTS `fcGetTimeIDByPosicao` $$
+CREATE FUNCTION `fcGetTimeIDByPosicao`(pIdCamp INTEGER, pIdPosicao INTEGER) RETURNS INTEGER
+	DETERMINISTIC
+begin
+	DECLARE _position INTEGER DEFAULT NULL;
+	DECLARE _finished INTEGER DEFAULT 0;
+	DECLARE _teamID INTEGER DEFAULT 0;
+
+	DECLARE tabela_cursor CURSOR FOR 
+	select C.ID_TIME
+	from TB_CLASSIFICACAO C
+	where C.ID_CAMPEONATO = pIdCamp
+	order by C.ID_GRUPO, C.QT_PONTOS_GANHOS desc, C.QT_VITORIAS desc, (C.QT_GOLS_PRO-C.QT_GOLS_CONTRA) desc, C.QT_GOLS_PRO desc, C.QT_GOLS_CONTRA;
+
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
+
+	SET _position = 1;
+	
+	OPEN tabela_cursor;
+	
+	get_tabela: LOOP
+	
+		FETCH tabela_cursor INTO _teamID;
+		
+		IF _finished = 1 THEN
+			LEAVE get_tabela;
+		END IF;
+		
+		IF _position = pIdPosicao THEN
+			LEAVE get_tabela;
+		END IF;
+		
+		SET _position = _position + 1;
+		
+	END LOOP get_tabela;
+	
+	CLOSE tabela_cursor;
+	
+	RETURN _teamID;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP FUNCTION IF EXISTS `fcGetTimeIDByPosicaoEGrupo` $$
+CREATE FUNCTION `fcGetTimeIDByPosicaoEGrupo`(pIdCamp INTEGER, pIdPosicao INTEGER, pIdGrupo INTEGER) RETURNS INTEGER
+	DETERMINISTIC
+begin
+	DECLARE _position INTEGER DEFAULT NULL;
+	DECLARE _finished INTEGER DEFAULT 0;
+	DECLARE _teamID INTEGER DEFAULT 0;
+
+	DECLARE tabela_cursor CURSOR FOR 
+	select C.ID_TIME
+	from TB_CLASSIFICACAO C
+	where C.ID_CAMPEONATO = pIdCamp
+	and C.ID_GRUPO = pIdGrupo
+	order by C.ID_GRUPO, C.QT_PONTOS_GANHOS desc, C.QT_VITORIAS desc, (C.QT_GOLS_PRO-C.QT_GOLS_CONTRA) desc, C.QT_GOLS_PRO desc, C.QT_GOLS_CONTRA;
+
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
+
+	SET _position = 1;
+	
+	OPEN tabela_cursor;
+	
+	get_tabela: LOOP
+	
+		FETCH tabela_cursor INTO _teamID;
+		
+		IF _finished = 1 THEN
+			LEAVE get_tabela;
+		END IF;
+		
+		IF _position = pIdPosicao THEN
+			LEAVE get_tabela;
+		END IF;
+		
+		SET _position = _position + 1;
+		
+	END LOOP get_tabela;
+	
+	CLOSE tabela_cursor;
+	
+	RETURN _teamID;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddUpdateClassificacao` $$
 CREATE PROCEDURE `spAddUpdateClassificacao`(    
     pIdCamp INTEGER,     
@@ -203,12 +336,12 @@ begin
 	select C.*, T.NM_TIME, T.DS_TIPO, T.DS_URL_TIME, U.PSN_ID, T.IN_TIME_EXCLUIDO_TEMP_ATUAL, C.ID_GRUPO,
 	(select HC.IN_POSICAO from TB_HISTORICO_CLASSIFICACAO HC where HC.ID_CAMPEONATO = C.ID_CAMPEONATO and HC.ID_TIME = C.ID_TIME and HC.IN_NUMERO_RODADA = _numRodada limit 1) as PosicaoAnterior
 	from TB_CLASSIFICACAO C, TB_TIME T, TB_USUARIO_TIME UT, TB_USUARIO U 
-	where C.ID_TIME = T.ID_TIME 
+	where C.ID_CAMPEONATO = pIdCamp
+	and UT.DT_VIGENCIA_FIM is null
+	and C.ID_TIME = T.ID_TIME 
 	and C.ID_CAMPEONATO = UT.ID_CAMPEONATO
 	and T.ID_TIME = UT.ID_TIME
 	and UT.ID_USUARIO = U.ID_USUARIO
-	and UT.DT_VIGENCIA_FIM is null
-	and C.ID_CAMPEONATO = pIdCamp
 	order by C.ID_GRUPO, C.QT_PONTOS_GANHOS desc, QT_VITORIAS desc, (QT_GOLS_PRO-QT_GOLS_CONTRA) desc, QT_GOLS_PRO desc, QT_GOLS_CONTRA, T.NM_TIME;      
 End$$
 DELIMITER ;

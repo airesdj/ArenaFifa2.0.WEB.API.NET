@@ -200,8 +200,6 @@ namespace ArenaFifa20.API.NET.Controllers
                             modelDetails.roundDetails = roundQualifyDescription +
                                                         modelDetails.startDate.ToString("dd/MM") + " (" + modelDetails.startDate.DayOfWeek.ToString().Substring(0, 3) + ") à " +
                                                         modelDetails.endDate.ToString("dd/MM") + " (" + modelDetails.endDate.DayOfWeek.ToString().Substring(0, 3) + ")";
-                            if (!String.IsNullOrEmpty(modelDetails.groupName))
-                                modelDetails.roundDetails = modelDetails.groupName + " - " + modelDetails.roundDetails;
 
                             roundAux = modelDetails.round;
                             roundStageAux = modelDetails.stageID;
