@@ -1,5 +1,51 @@
 USE `arena_spooler`;
 
+ALTER TABLE TB_SPOOLER_PROCESSOS_EMAIL MODIFY dt_criacao_processo DATE;
+ALTER TABLE TB_SPOOLER_PROCESSOS_EMAIL MODIFY dt_ultima_execucao DATE;
+ALTER TABLE TB_SPOOLER_PROCESSOS_EMAIL MODIFY dt_fim_processo DATE;
+ALTER TABLE TB_PROCESSOS_EMAIL_DETALHE MODIFY dt_execucao_processo DATE;
+ALTER TABLE TB_PROCESSOS_ADMINISTRATIVOS MODIFY dt_ultima_execucao DATE;
+
+
+DELIMITER $$
+DROP FUNCTION IF EXISTS `fcGetLastProcessID` $$
+CREATE FUNCTION `fcGetLastProcessID`() RETURNS INTEGER
+	DETERMINISTIC
+begin
+
+	DECLARE _id INTEGER DEFAULT NULL;
+	
+	SELECT id_processo into _id
+	FROM TB_SPOOLER_PROCESSOS_EMAIL
+	ORDER BY id_processo desc
+	LIMIT 1;
+
+	If _id IS NULL THEN
+		SET _id = 0;
+	END IF;
+	
+	RETURN _id;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP FUNCTION IF EXISTS `fcValidateExistProcessUser` $$
+CREATE FUNCTION `fcValidateExistProcessUser`(pIdProcess INTEGER, pIdUsu INTEGER) RETURNS INTEGER
+	DETERMINISTIC
+begin
+
+	DECLARE _exist INTEGER DEFAULT NULL;
+	
+	SELECT count(1) into _exist
+	FROM TB_PROCESSOS_EMAIL_DETALHE
+	WHERE id_processo = pIdProcess and id_usuario = pIdUsu;
+
+	RETURN _exist;
+End$$
+DELIMITER ;
+
+
 
 
 DELIMITER $$
@@ -51,3 +97,60 @@ begin
 	
 End$$
 DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spAddSpooler` $$
+CREATE PROCEDURE `spAddSpooler`(
+		pDescription VARCHAR(250),
+		pTypeSpooler VARCHAR(30),
+		pUsuResponsavelID INTEGER
+)
+begin
+
+	INSERT INTO TB_SPOOLER_PROCESSOS_EMAIL (ds_processo, sl_processo, dt_criacao_processo, hr_criacao_processo, qtd_total_emails, qtd_emails_enviados, qtd_emails_restantes, psn_id_responsavel)
+	VALUES (pDescription, pTypeSpooler, DATE_FORMAT(now(),'%Y-%m-%d'), DATE_FORMAT(now(),'%H:%i'), 0, 0, 0, pUsuResponsavelID);
+
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spAddSpoolerDetailsDraw` $$
+CREATE PROCEDURE `spAddSpoolerDetailsDraw`(
+		pProcessoID INTEGER,
+		pUsuID INTEGER,
+		pSequenceID INTEGER,
+		pUsuName VARCHAR(50),
+		pPsnID VARCHAR(30),
+		pEmail VARCHAR(80),
+		pInModerator TINYINT,
+		pTempID INTEGER,
+		pCampID INTEGER,
+		pInTecnico INTEGER,
+		pUsuResponsavelID INTEGER
+)
+begin
+
+	INSERT INTO TB_PROCESSOS_EMAIL_DETALHE (id_processo, id_usuario, id_sequencial, nm_usuario, psn_id, ds_email, in_usuario_moderador, id_temporada, id_campeonato, id_moderador, in_tecnico)
+	VALUES (pProcessoID, pUsuID, pSequenceID, pUsuName, pPsnID, pEmail, pInModerator, pTempID, pCampID, pUsuResponsavelID, pInTecnico);
+
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spUpdateTotalSpooler` $$
+CREATE PROCEDURE `spUpdateTotalSpooler`(
+		pProcessoID INTEGER
+)
+begin
+
+	UPDATE TB_SPOOLER_PROCESSOS_EMAIL S 
+	   SET S.qtd_total_emails = (SELECT count(1) FROM TB_PROCESSOS_EMAIL_DETALHE D WHERE D.id_processo = pProcessoID) 
+	 WHERE S.id_processo = pProcessoID;
+
+End$$
+DELIMITER ;
+

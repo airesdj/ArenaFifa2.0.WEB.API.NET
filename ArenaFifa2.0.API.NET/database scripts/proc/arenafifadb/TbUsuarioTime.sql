@@ -2,6 +2,24 @@ USE `arenafifadb`;
 
 
 DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllUsuarioTimeOfCampeonato` $$
+CREATE PROCEDURE `spGetAllUsuarioTimeOfCampeonato`(
+	pIdCamp INTEGER
+)
+begin
+   select UT.ID_USUARIO, UT.ID_TIME, U.NM_USUARIO, U.PSN_ID, T.NM_TIME, T.DS_TIPO 
+   from TB_USUARIO_TIME UT, TB_USUARIO U,  TB_TIME T 
+   where UT.ID_CAMPEONATO = pIdCamp
+   and UT.DT_VIGENCIA_FIM IS NULL
+   and UT.ID_USUARIO = U.ID_USUARIO
+   and UT.ID_TIME = T.ID_TIME
+   order by UT.INDICADOR_ORDEM_SORTEIO, U.NM_USUARIO;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
 DROP PROCEDURE IF EXISTS `spDeleteUsuarioTimeOfCampeonato` $$
 CREATE PROCEDURE `spDeleteUsuarioTimeOfCampeonato`(
 	pIdCamp INTEGER

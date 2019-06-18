@@ -18,7 +18,6 @@ begin
 	AND IN_CAMPEONATO_GRUPO = False AND IN_CAMPEONATO_TURNO_UNICO = False AND IN_CAMPEONATO_TURNO_RETURNO = False
 	AND IN_SISTEMA_MATA = True;
 
-
 	If _exist IS NULL THEN
 		SET _exist = 0;
 	END IF;
@@ -94,7 +93,7 @@ begin
    where C.ID_TEMPORADA = pIdTemporada
    and C.IN_CAMPEONATO_ATIVO = true
    and C.ID_Temporada = T.ID_Temporada
-   order by C.NM_CAMPEONATO;
+   order by C.ID_CAMPEONATO;
 End$$
 DELIMITER ;
 
@@ -449,15 +448,15 @@ begin
 	
 	IF pMode = "H2H" THEN
 	
-		SET _sgCamp = "DIV1, DIV2, DIV3, DIV4, CPDM, CPGL, CPSA, ERCP, MDCL";
+		SET _sgCamp = "DIV1,DIV2,DIV3,DIV4,CPDM,CPGL,CPSA,ERCP,MDCL";
 
 	ELSEIF pMode = "FUT" THEN
 	
-		SET _sgCamp = "FUT1, FUT2, CFUT";
+		SET _sgCamp = "FUT1,FUT2,CFUT";
 	
 	ELSEIF pMode = "PRO" THEN
 	
-		SET _sgCamp = "PRO1, PRO2, CPRO";
+		SET _sgCamp = "PRO1,PRO2,CPRO";
 	
 	END IF;
 	

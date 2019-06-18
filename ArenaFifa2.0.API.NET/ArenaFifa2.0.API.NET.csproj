@@ -171,6 +171,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\SpoolerController.cs" />
     <Compile Include="Controllers\ChampionshipController.cs" />
     <Compile Include="Controllers\BlogController.cs" />
     <Compile Include="Controllers\ChampionshipCommentMatchController.cs" />
@@ -180,6 +181,8 @@
     <Compile Include="Controllers\ChampionshipGroupController.cs" />
     <Compile Include="Controllers\ChampionshipTeamController.cs" />
     <Compile Include="Controllers\ChampionshipStageController.cs" />
+    <Compile Include="Controllers\DrawController.cs" />
+    <Compile Include="Controllers\UserTeamController.cs" />
     <Compile Include="Controllers\ChampionshipUserController.cs" />
     <Compile Include="Controllers\ChampionshipTypeController.cs" />
     <Compile Include="Controllers\ScorerMatchController.cs" />
@@ -208,6 +211,7 @@
     <Compile Include="Models\ChampionshipStageModel.cs" />
     <Compile Include="Models\ChampionshipUserModel.cs" />
     <Compile Include="Models\ScorerMatchModel.cs" />
+    <Compile Include="Models\SpoolerModel.cs" />
     <Compile Include="Models\ScorerModel.cs" />
     <Compile Include="Models\ModeratorModel.cs" />
     <Compile Include="Models\RankingModel.cs" />
@@ -220,6 +224,7 @@
     <Compile Include="Models\TeamModel.cs" />
     <Compile Include="Models\SeasonModel.cs" />
     <Compile Include="Models\BenchModel.cs" />
+    <Compile Include="Models\UserTeamModel.cs" />
     <Compile Include="Models\UserModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

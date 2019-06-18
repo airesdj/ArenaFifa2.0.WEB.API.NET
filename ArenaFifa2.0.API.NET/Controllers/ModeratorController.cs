@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Web.Http;
 using static ArenaFifa20.API.NET.Models.ModeratorModel;
+using static ArenaFifa20.API.NET.Models.SpoolerModel;
 using DBConnection;
 using System.Data;
 using System.Net;
