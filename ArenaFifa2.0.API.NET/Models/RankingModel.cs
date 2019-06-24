@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using static ArenaFifa20.API.NET.Models.ScorerModel;
 using System.Linq;
 using System.Web;
 
@@ -24,14 +25,6 @@ namespace ArenaFifa20.API.NET.Models
             public string typeChampionship { get; set; }
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
-        }
-
-        public class listScorers
-        {
-            public int totalGoals { get; set; }
-            public string playerName { get; set; }
-            public string psnID { get; set; }
-            public string teamName { get; set; }
         }
 
         public class RankingViewModel

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Web.Http;
+using static ArenaFifa20.API.NET.Models.MyMatchesModel;
 using static ArenaFifa20.API.NET.Models.HallOfFameModel;
 using DBConnection;
 using System.Data;
@@ -16,12 +17,13 @@ namespace ArenaFifa20.API.NET.Controllers
         string[] paramValue = null;
 
         [HttpPost]
-        public IHttpActionResult hallOfFame(SummaryViewModel model)
+        public IHttpActionResult hallOfFame(HallOfFameSummaryViewModel model)
         {
 
 
             db.openConnection();
             DataTable dt = null;
+            string returnMessage = String.Empty;
 
             try
             {
@@ -427,8 +429,8 @@ namespace ArenaFifa20.API.NET.Controllers
                 else if (model.actionUser == "renewalSquad")
                 {
                     RenewalPROCLUBSquadViewModel PROCLUBSquadModel = new RenewalPROCLUBSquadViewModel();
-                    RenewalSquadModel renewalSquad = new RenewalSquadModel();
-                    List<RenewalSquadModel> listOfSquad = new List<RenewalSquadModel>();
+                    squadListModel renewalSquad = new squadListModel();
+                    List<squadListModel> listOfSquad = new List<squadListModel>();
 
                     PROCLUBSquadModel.managerID = model.managerID;
                     PROCLUBSquadModel.seasonID = model.seasonID;
@@ -446,23 +448,7 @@ namespace ArenaFifa20.API.NET.Controllers
                         PROCLUBSquadModel.mobileNumber = dt.Rows[0]["NO_CELULAR"].ToString();
                         PROCLUBSquadModel.codeMobileNumber = dt.Rows[0]["NO_DDD"].ToString();
 
-
-                        paramName = new string[] { "pIdTemporada", "pIdManager" };
-                        paramValue = new string[] { Convert.ToString(model.seasonID), Convert.ToString(model.managerID) };
-                        dt = db.executePROC("spGetAllSquadOfClub", paramName, paramValue);
-
-                        for (var i = 0; i < dt.Rows.Count; i++)
-                        {
-                            renewalSquad = new RenewalSquadModel();
-                            renewalSquad.userID = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
-                            renewalSquad.userName = dt.Rows[i]["NM_USUARIO"].ToString();
-                            renewalSquad.psnID = dt.Rows[i]["PSN_ID"].ToString();
-                            if (renewalSquad.userID == model.managerID) { renewalSquad.isCapitain = true; }
-                            renewalSquad.recordDate = dt.Rows[i]["DT_CONFIRMACAO_FORMATADA"].ToString();
-                            listOfSquad.Add(renewalSquad);
-                        }
-
-                        PROCLUBSquadModel.listOfSquad = listOfSquad;
+                        PROCLUBSquadModel.listOfSquad = GlobalFunctions.getListOfSquadPROCLUB(db, model.seasonID, model.managerID, out returnMessage);
                         PROCLUBSquadModel.returnMessage = "HallOfFameSuccessfully";
                         return CreatedAtRoute("DefaultApi", new { id = 0 }, PROCLUBSquadModel);
                     }
@@ -534,7 +520,7 @@ namespace ArenaFifa20.API.NET.Controllers
             }
             catch (Exception ex)
             {
-                model = new SummaryViewModel();
+                model = new HallOfFameSummaryViewModel();
                 model.returnMessage = "error_" + ex.Message;
                 return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
             }

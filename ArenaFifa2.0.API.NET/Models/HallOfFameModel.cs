@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using static ArenaFifa20.API.NET.Models.MyMatchesModel;
 
 namespace ArenaFifa20.API.NET.Models
 {
     public class HallOfFameModel
     {
-        public class SummaryViewModel
+        public class HallOfFameSummaryViewModel
         {
             public string psnIDSerieAH2H { get; set; }
             public string teamIDSerieAH2H { get; set; }
@@ -129,7 +130,7 @@ namespace ArenaFifa20.API.NET.Models
 
         public class RenewalPROCLUBSquadViewModel
         {
-            public List<RenewalSquadModel> listOfSquad { get; set; }
+            public List<squadListModel> listOfSquad { get; set; }
             public int managerID { get; set; }
             public string mangerName { get; set; }
             public string psnID { get; set; }
@@ -140,17 +141,6 @@ namespace ArenaFifa20.API.NET.Models
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
-
-        public class RenewalSquadModel
-        {
-            public int userID { get; set; }
-            public string userName { get; set; }
-            public string psnID { get; set; }
-            public string recordDate { get; set; }
-            public Boolean isCapitain { get; set; }
-        }
-
-
 
     }
 }

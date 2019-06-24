@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Web.Http;
 using static ArenaFifa20.API.NET.Models.RankingModel;
+using static ArenaFifa20.API.NET.Models.ScorerModel;
 using DBConnection;
 using System.Data;
 using System.Net;
@@ -28,10 +29,6 @@ namespace ArenaFifa20.API.NET.Controllers
                 if (model.actionUser == "summary")
                 {
 
-                    listScorers listScorers = new listScorers();
-                    List<listScorers> listOfScorersH2H = new List<listScorers>();
-                    List<listScorers> listOfScorersPRO = new List<listScorers>();
-
                     try
                     {
                         paramName = new string[] { };
@@ -46,38 +43,8 @@ namespace ArenaFifa20.API.NET.Controllers
                         model.seasonNameFUT = dt.Rows[0]["seasonNameFUT"].ToString();
                         model.seasonNamePRO = dt.Rows[0]["seasonNamePRO"].ToString();
 
-                        paramName = new string[] { "pMode" };
-                        paramValue = new string[] { "H2H" };
-                        dt = db.executePROC("spGetSummaryRankingListScorers", paramName, paramValue);
-
-                        for (var i = 0; i < dt.Rows.Count; i++)
-                        {
-                            listScorers = new listScorers();
-                            listScorers.playerName = dt.Rows[i]["NM_GOLEADOR"].ToString();
-                            listScorers.psnID = dt.Rows[i]["PSN_ID"].ToString();
-                            listScorers.teamName = dt.Rows[i]["NM_TIME"].ToString() + "-" + dt.Rows[i]["DS_Tipo"].ToString();
-                            listScorers.totalGoals = Convert.ToInt16(dt.Rows[i]["QT_GOLS_MARCADOS"].ToString());
-                            listOfScorersH2H.Add(listScorers);
-                        }
-
-                        model.listOfScorersH2H = listOfScorersH2H;
-
-                        paramName = new string[] { "pMode" };
-                        paramValue = new string[] { "PRO" };
-                        dt = db.executePROC("spGetSummaryRankingListScorers", paramName, paramValue);
-
-                        for (var i = 0; i < dt.Rows.Count; i++)
-                        {
-                            listScorers = new listScorers();
-                            listScorers.playerName = dt.Rows[i]["NM_GOLEADOR"].ToString();
-                            listScorers.psnID = dt.Rows[i]["PSN_ID"].ToString();
-                            listScorers.teamName = dt.Rows[i]["NM_TIME"].ToString() + "-" + dt.Rows[i]["DS_Tipo"].ToString();
-                            listScorers.totalGoals = Convert.ToInt16(dt.Rows[i]["QT_GOLS_MARCADOS"].ToString());
-                            listOfScorersPRO.Add(listScorers);
-                        }
-
-                        model.listOfScorersPRO = listOfScorersPRO;
-
+                        model.listOfScorersH2H = GlobalFunctions.getListScorers("H2H", db);
+                        model.listOfScorersPRO = GlobalFunctions.getListScorers("PRO", db);
 
                         model.returnMessage = "RankingSuccessfully";
                         return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
@@ -94,9 +61,6 @@ namespace ArenaFifa20.API.NET.Controllers
                     }
                     finally
                     {
-                        listScorers = null;
-                        listOfScorersH2H = null;
-                        listOfScorersPRO = null;
                     }
 
                 }

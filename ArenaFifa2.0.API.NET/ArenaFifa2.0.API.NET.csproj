@@ -171,6 +171,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\MyMatchesController.cs" />
     <Compile Include="Controllers\SpoolerController.cs" />
     <Compile Include="Controllers\ChampionshipController.cs" />
     <Compile Include="Controllers\BlogController.cs" />
@@ -202,6 +203,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="GlobalFunctions.cs" />
     <Compile Include="Models\ChampionshipCommentMatchModel.cs" />
     <Compile Include="Models\ChampionshipTeamTableModel.cs" />
     <Compile Include="Models\ChampionshipMatchTableModel.cs" />
@@ -210,6 +212,7 @@
     <Compile Include="Models\ChampionshipTeamModel.cs" />
     <Compile Include="Models\ChampionshipStageModel.cs" />
     <Compile Include="Models\ChampionshipUserModel.cs" />
+    <Compile Include="Models\MyMatchesModel.cs" />
     <Compile Include="Models\ScorerMatchModel.cs" />
     <Compile Include="Models\SpoolerModel.cs" />
     <Compile Include="Models\ScorerModel.cs" />
@@ -229,6 +232,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".editorconfig" />
     <None Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>

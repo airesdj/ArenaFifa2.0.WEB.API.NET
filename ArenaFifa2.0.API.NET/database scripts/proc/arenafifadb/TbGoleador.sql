@@ -295,7 +295,7 @@ begin
 	
 	ELSE
 	
-		call spAddGoleador(_idGoleador, _idTime, _PsnId, _NmUsu, '...', 'PRO CLUB', 0, pIdUsu);
+		call spAddGoleador(_idGoleador, _idTime, _PsnId, _NmUsu, '...', 'PRO CLUB', 0, "PRO", pIdUsu);
 	
 	END IF;
 End$$
@@ -336,7 +336,7 @@ begin
 
 		SET _idGoleador = spGetMaxIdGoleador();
 	
-		call spAddGoleador(_idGoleador, pIdNewTime, _PsnId, _NmUsu, '...', 'PRO CLUB', 0, _IdUsu);
+		call spAddGoleador(_idGoleador, pIdNewTime, _PsnId, _NmUsu, '...', 'PRO CLUB', 0, "PRO", _IdUsu);
 		
 	END LOOP get_tabela;
 	
@@ -349,7 +349,7 @@ begin
 	from TB_USUARIO
 	where ID_USUARIO = pIdUsu;	
 
-	call spAddGoleador(_idGoleador, pIdNewTime, _PsnId, _NmUsu, '...', 'PRO CLUB', 0, _IdUsu);
+	call spAddGoleador(_idGoleador, pIdNewTime, _PsnId, _NmUsu, '...', 'PRO CLUB', 0, "PRO", _IdUsu);
 
 	call spDeleteConfirmElencoProOfManagerTemporada(pIdTemp, pIdUsu);
 End$$
@@ -423,5 +423,66 @@ begin
    and J.ID_GOLEADOR = G.ID_GOLEADOR
    and J.ID_TIME = G.ID_TIME
    order by TpJogo, NM_GOLEADOR;
+End$$
+DELIMITER ;
+
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spAddPlayerSquadPro` $$
+CREATE PROCEDURE `spAddPlayerSquadPro`(
+	pIdClub INTEGER,
+	pPsnJogador VARCHAR(30)
+	
+)
+begin
+	DECLARE _total INTEGER DEFAULT 0;
+	DECLARE _idJogador INTEGER DEFAULT NULL;
+	DECLARE _nmJogador VARCHAR(50) DEFAULT NULL;
+	
+	select ID_USUARIO, NM_USUARIO into _idJogador, _nmJogador
+	from TB_USUARIO
+	where PSN_ID = pPsnJogador;
+	
+	IF (_idJogador IS NULL) THEN
+	
+		select '1' as COD_VALIDATION, 'Incorrect validation - PSN not found.' as DSC_VALIDATION;
+	
+	ELSE
+	
+		select count(1) into _total
+		from TB_GOLEADOR
+		where ID_TIME = pIdClub
+		and ID_USUARIO = _idJogador;
+		
+		IF _total > 0 THEN
+		
+			select '2' as COD_VALIDATION, 'Incorrect validation - Player was found on your squad.' as DSC_VALIDATION;
+	
+		ELSE
+		
+			SET _total = 0;
+		
+			select count(1) into _total
+			from TB_GOLEADOR
+			where ID_TIME <> pIdClub
+			and ID_USUARIO = _idJogador;
+			
+			IF _total > 0 THEN
+
+				select '3' as COD_VALIDATION, 'Incorrect validation - Player was found on another squad.' as DSC_VALIDATION;
+	
+			ELSE
+			
+				call spAddGoleador(0, pIdClub, pPsnJogador, _nmJogador, '...', 'PRO CLUB', 0, "PRO", _idJogador);
+			
+				select '0' as COD_VALIDATION, 'Validation successfully.' as DSC_VALIDATION;
+			
+			END IF;
+
+		END IF;
+
+	END IF;
 End$$
 DELIMITER ;

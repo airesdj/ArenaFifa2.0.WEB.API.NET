@@ -72,6 +72,7 @@ CREATE PROCEDURE `spAddConfirmElencoPro`(
 begin
 	DECLARE _total INTEGER DEFAULT 0;
 	DECLARE _idJogador INTEGER DEFAULT NULL;
+	DECLARE _idClub INTEGER DEFAULT NULL;
 	
 	select ID_USUARIO into _idJogador
 	from TB_USUARIO
@@ -83,6 +84,8 @@ begin
 	
 	ELSE
 	
+		SET _idClub = fcGetCurrentIdTimePRO(pIdManager);
+		
 		select count(1) into _total
 		from TB_CONFIRM_ELENCO_PRO
 		where ID_TEMPORADA = pIdTemporada
@@ -96,11 +99,10 @@ begin
 		ELSE
 		
 			SET _total = 0;
-		
+			
 			select count(1) into _total
 			from TB_GOLEADOR
-			where ID_TEMPORADA = pIdTemporada
-			and ID_USUARIO_MANAGER <> pIdManager
+			where ID_TIME <> _idClub
 			and ID_USUARIO = _idJogador;
 			
 			IF _total > 0 THEN
