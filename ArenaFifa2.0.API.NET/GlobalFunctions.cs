@@ -171,6 +171,7 @@ namespace ArenaFifa20.API.NET
                 {
                     modelDetails = new ChampionshipMatchTableDetailsModel();
                     modelDetails.matchID = Convert.ToInt32(dt.Rows[i]["ID_TABELA_JOGO"].ToString());
+                    modelDetails.championshipID = Convert.ToInt32(dt.Rows[i]["ID_CAMPEONATO"].ToString());
                     modelDetails.championshipName = dt.Rows[i]["NM_CAMPEONATO"].ToString();
                     modelDetails.stageID = Convert.ToInt16(dt.Rows[i]["ID_FASE"].ToString());
                     modelDetails.stageName = dt.Rows[i]["NM_FASE"].ToString();

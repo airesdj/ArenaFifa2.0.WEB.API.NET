@@ -596,7 +596,7 @@ begin
 		
 		SET _clubID = fcGetCurrentIdTimePRO(pIdManager);
 	
-		select C.ID_GOLEADOR, C.ID_USUARIO, DATE_FORMAT(C.DT_INSCRICAO,'%d/%m/%Y %h:%i') as DT_CONFIRMACAO_FORMATADA, U.NM_Usuario, U.PSN_Id
+		select C.ID_GOLEADOR, C.ID_USUARIO, DATE_FORMAT(C.DT_INSCRICAO,'%d/%m/%Y %H:%i') as DT_CONFIRMACAO_FORMATADA, U.NM_Usuario, U.PSN_Id
 		from TB_GOLEADOR C, TB_USUARIO U
 		where C.ID_TIME = _clubID
 		and C.ID_USUARIO = U.ID_USUARIO
@@ -604,7 +604,7 @@ begin
 
 	ELSE
 	
-		select C.*, 0 as ID_GOLEADOR, DATE_FORMAT(C.DT_CONFIRMACAO,'%d/%m/%Y %H:%I') as DT_CONFIRMACAO_FORMATADA, U.NM_Usuario, U.PSN_Id
+		select C.*, 0 as ID_GOLEADOR, DATE_FORMAT(C.DT_CONFIRMACAO,'%d/%m/%Y %H:%i') as DT_CONFIRMACAO_FORMATADA, U.NM_Usuario, U.PSN_Id
 		from TB_CONFIRM_ELENCO_PRO C, TB_USUARIO U
 		where C.ID_TEMPORADA = pIdTemporada
 		and C.ID_USUARIO_MANAGER = pIdManager
