@@ -9,6 +9,8 @@ using System.Data;
 using System.Net;
 using System.Collections.Generic;
 using System.Configuration;
+using static ArenaFifa20.API.NET.Models.ChampionshipTeamTableModel;
+using System.Text;
 
 namespace ArenaFifa20.API.NET.Controllers
 {
@@ -26,6 +28,15 @@ namespace ArenaFifa20.API.NET.Controllers
             ChampionshipDetailsModel modelDetails = new ChampionshipDetailsModel();
             ChampionshipListViewModel mainModel = new ChampionshipListViewModel();
             List<ChampionshipDetailsModel> listOfModel = new List<ChampionshipDetailsModel>();
+
+            ChampionshipCalendarListViewModel calendarViewModel = new ChampionshipCalendarListViewModel();
+            List<ChampionshipCalendarDetailsModel> calendarListModel = new List<ChampionshipCalendarDetailsModel>();
+            ChampionshipCalendarDetailsModel calendarDetailsModel = new ChampionshipCalendarDetailsModel();
+
+            ChampionshipLineUpListViewModel LineUpViewModel = new ChampionshipLineUpListViewModel();
+            List<ChampionshipLineUpDetailsModel> LineUpListModel = new List<ChampionshipLineUpDetailsModel>();
+            ChampionshipLineUpDetailsModel LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+
             db.openConnection();
             DataTable dt = null;
 
@@ -34,7 +45,7 @@ namespace ArenaFifa20.API.NET.Controllers
 
                 if (model.actionUser.ToLower() == "save" && model.id > 0)
                 {
-                    
+
                     paramName = new string[] { "pId", "pNmCamp", "pQtTimes", "pDtInicio", "pDtSorteio", "pAtivo", "pPorGrupo", "pTurnoUnico",
                                                "pTurnoReturno", "pQtGrupos", "pMataMata", "pIdaVolta", "pQtTimesClassif", "pQtTimesRebaix", "pIdUsuModera",
                                                "pIdUsuModera2", "pQtDiasFaseClassif", "pQtDiasFaseMataMata", "pSgTipoCamp", "pQtTimesProxClassif", "pIdConsole",
@@ -93,25 +104,7 @@ namespace ArenaFifa20.API.NET.Controllers
                 }
                 else if (model.actionUser.ToLower() == "getallactive")
                 {
-                    paramName = new string[] { "pIdTemporada" };
-                    paramValue = new string[] { "0" };
-                    dt = db.executePROC("spGetAllCampeonatosActiveOfTemporada", paramName, paramValue);
-
-                    for (int i = 0; i < dt.Rows.Count; i++)
-                    {
-                        modelDetails = new ChampionshipDetailsModel();
-                        modelDetails.id = Convert.ToInt32(dt.Rows[i]["ID_CAMPEONATO"].ToString());
-                        modelDetails.seasonID = Convert.ToInt32(dt.Rows[i]["ID_TEMPORADA"].ToString());
-                        modelDetails.seasonName = dt.Rows[i]["NM_TEMPORADA"].ToString();
-                        modelDetails.name = dt.Rows[i]["NM_CAMPEONATO"].ToString();
-                        modelDetails.type = dt.Rows[i]["SG_TIPO_CAMPEONATO"].ToString();
-                        modelDetails.totalTeam = Convert.ToInt32(dt.Rows[i]["QT_TIMES"].ToString());
-                        modelDetails.startDate = Convert.ToDateTime(dt.Rows[i]["DT_INICIO"].ToString());
-                        modelDetails.drawDate = Convert.ToDateTime(dt.Rows[i]["DT_SORTEIO"].ToString());
-                        modelDetails.active = Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_ATIVO"].ToString());
-
-                        listOfModel.Add(modelDetails);
-                    }
+                    listOfModel = GlobalFunctions.getAllActiveChampionshipCurrentSeason(db, 0, String.Empty);
 
                     mainModel.listOfChampionship = listOfModel;
                     mainModel.returnMessage = "ModeratorSuccessfully";
@@ -137,6 +130,413 @@ namespace ArenaFifa20.API.NET.Controllers
                     model.returnMessage = "ModeratorSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
+                else if (model.actionUser.ToLower() == "calendarallactivebytype")
+                {
+                    DateTime dtInicioCampeonato = DateTime.Now;
+                    DateTime dtFimFaseClassif = DateTime.Now;
+                    DateTime dtFimFaseMataxMata = DateTime.Now;
+                    int iQtdRodadasFaseMataxMata = 0;
+                    int iQtdRodadasFaseClassif = 0;
+                    int iQtdDiasFaseMataxMata = 0;
+                    int iQtdDiasFaseClassif = 0;
+                    int iQtdFaseMataxMata = 0;
+                    int iQtdeTempoEmDiasFaseClassif = 0;
+                    int iQtdeTempoEmDiasFaseMataxMata = 0;
+                    Boolean bDoubleRound = false;
+
+                    paramName = new string[] { "pType" };
+                    paramValue = new string[] { model.modeType };
+                    dt = db.executePROC("spGetAllCampeonatosActiveForCalendarView", paramName, paramValue);
+                    for (var i = 0; i < dt.Rows.Count; i++)
+                    {
+                        calendarDetailsModel = new ChampionshipCalendarDetailsModel();
+
+                        calendarDetailsModel.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
+                        calendarDetailsModel.championshipName = dt.Rows[i]["NM_CAMPEONATO"].ToString();
+                        calendarDetailsModel.type = dt.Rows[i]["SG_TIPO_CAMPEONATO"].ToString();
+                        calendarDetailsModel.startDate = Convert.ToDateTime(dt.Rows[i]["DT_INICIO"].ToString());
+
+                        iQtdDiasFaseMataxMata = Convert.ToInt16(dt.Rows[i]["QT_DIAS_PARTIDA_FASE_MATAxMATA"].ToString());
+                        iQtdDiasFaseClassif = Convert.ToInt16(dt.Rows[i]["QT_DIAS_PARTIDA_CLASSIFICACAO"].ToString());
+                        if (dt.Rows[i]["IN_DOUBLE_ROUND"].ToString() == "1") { bDoubleRound = true; } else { bDoubleRound = false; }
+                        iQtdRodadasFaseClassif = 0;
+                        iQtdFaseMataxMata = Convert.ToInt16(dt.Rows[i]["TOTAL_FASE_CAMPEONATO"].ToString());
+
+                        if (Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_GRUPO"].ToString()) && Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_TURNO_UNICO"].ToString()))
+                        {
+                            if (((Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) / Convert.ToInt16(dt.Rows[i]["QT_GRUPOS"].ToString())) % 2) == 0)
+                                iQtdRodadasFaseClassif = ((Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) / Convert.ToInt16(dt.Rows[i]["QT_GRUPOS"].ToString())) - 1);
+                            else
+                                iQtdRodadasFaseClassif = (Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) / Convert.ToInt16(dt.Rows[i]["QT_GRUPOS"].ToString()));
+                        }
+                        else if (Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_GRUPO"].ToString()) && Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_TURNO_RETURNO"].ToString()))
+                        {
+                            if (((Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) / Convert.ToInt16(dt.Rows[i]["QT_GRUPOS"].ToString())) % 2) == 0)
+                                iQtdRodadasFaseClassif = (((Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) / Convert.ToInt16(dt.Rows[i]["QT_GRUPOS"].ToString())) - 1) * 2);
+                            else
+                                iQtdRodadasFaseClassif = ((Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) / Convert.ToInt16(dt.Rows[i]["QT_GRUPOS"].ToString())) * 2);
+                        }
+                        else if (Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_TURNO_UNICO"].ToString()) && !Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_GRUPO"].ToString()))
+                            iQtdRodadasFaseClassif = (Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) - 1);
+                        else if (Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_TURNO_RETURNO"].ToString()) && !Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_GRUPO"].ToString()))
+                            iQtdRodadasFaseClassif = ((Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) - 1) * 2);
+                        else
+                        {
+                            if (Convert.ToInt16(dt.Rows[i]["QT_TIMES"].ToString()) == 1)
+                                iQtdFaseMataxMata = iQtdFaseMataxMata + 1;
+
+                            iQtdRodadasFaseClassif = 0;
+                        }
+
+                        if (bDoubleRound && iQtdRodadasFaseClassif > 1) { iQtdRodadasFaseClassif = iQtdRodadasFaseClassif / 2; }
+
+                        dtInicioCampeonato = calendarDetailsModel.startDate;
+                        dtFimFaseClassif = calendarDetailsModel.startDate;
+                        iQtdRodadasFaseMataxMata = 0;
+
+                        if (Convert.ToBoolean(dt.Rows[i]["IN_SISTEMA_MATA"].ToString()))
+                        {
+                            iQtdRodadasFaseMataxMata = iQtdRodadasFaseMataxMata + 1;
+
+                            if (Convert.ToBoolean(dt.Rows[i]["IN_SISTEMA_IDA_VOLTA"].ToString())) { iQtdRodadasFaseMataxMata = iQtdRodadasFaseMataxMata + 1; }
+                        }
+
+                        if (iQtdRodadasFaseClassif > 0)
+                        {
+                            iQtdeTempoEmDiasFaseClassif = (iQtdRodadasFaseClassif * iQtdDiasFaseClassif);
+
+
+                            if (String.IsNullOrEmpty(dt.Rows[i]["DT_TABELA_FIM_JOGO"].ToString()))
+                            {
+                                dtFimFaseClassif = dtInicioCampeonato.AddDays(iQtdeTempoEmDiasFaseClassif);
+                                dtFimFaseClassif = dtFimFaseClassif.AddDays(-1);
+                            }
+                            else
+                                dtFimFaseClassif = Convert.ToDateTime(dt.Rows[i]["DT_TABELA_FIM_JOGO"].ToString());
+
+                            calendarDetailsModel.endStage0 = dtFimFaseClassif;
+                            calendarDetailsModel.dayOfStage0 = iQtdDiasFaseClassif;
+                        }
+                        else
+                        {
+                            calendarDetailsModel.endStage0 = Convert.ToDateTime("01/01/1900");
+                            calendarDetailsModel.dayOfStage0 = 0;
+                        }
+
+                        if (iQtdRodadasFaseMataxMata > 0)
+                        {
+                            iQtdeTempoEmDiasFaseMataxMata = ((iQtdFaseMataxMata * iQtdRodadasFaseMataxMata) * iQtdDiasFaseMataxMata) + iQtdFaseMataxMata;
+                            dtFimFaseMataxMata = dtFimFaseClassif.AddDays(iQtdeTempoEmDiasFaseMataxMata);
+
+                            calendarDetailsModel.endStagePlayoff = dtFimFaseMataxMata;
+                            calendarDetailsModel.dayOfStagePlayoff = iQtdDiasFaseMataxMata;
+                        }
+
+                        calendarListModel.Add(calendarDetailsModel);
+                    }
+
+                    calendarViewModel.listOfChampionship = calendarListModel;
+                    calendarViewModel.modeType = model.modeType;
+                    calendarViewModel.returnMessage = "CurrentSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, calendarViewModel);
+                }
+                else if (model.actionUser.ToLower() == "lineupbyid")
+                {
+                    int ID_STAGE_0 = 0;
+                    int ID_STAGE_2ND = 1;
+                    int ID_STAGE_ROUND16 = 2;
+                    int ID_STAGE_QUARTER = 3;
+                    int ID_STAGE_SEMI = 4;
+                    int ID_STAGE_FINAL = 6;
+
+                    Boolean hasStage0 = false;
+                    int totalStagesPlayoff = 0;
+                    int firstStageIDPlayoff = 0;
+                    int firstStageID = 0;
+                    int stageIDInProgress = 0;
+                    string championshipType = String.Empty;
+                    int championshipIDSource = 0;
+
+                    paramName = new string[] { "pIdCamp" };
+                    paramValue = new string[] { model.id.ToString() };
+                    dt = db.executePROC("spGetDetailsCampeonatoForLineUpView", paramName, paramValue);
+
+                    totalStagesPlayoff = Convert.ToInt16(dt.Rows[0]["TOTAL_FASES_PLAYOFF"].ToString());
+                    firstStageIDPlayoff = Convert.ToInt16(dt.Rows[0]["FIRST_ID_FASE_PLAYOFF"].ToString());
+                    firstStageID = Convert.ToInt16(dt.Rows[0]["FIRST_ID_FASE"].ToString());
+                    if (String.IsNullOrEmpty(dt.Rows[0]["ID_FASE_IN_PROGRESS"].ToString()))
+                        stageIDInProgress = firstStageID;
+                    else
+                        stageIDInProgress = Convert.ToInt16(dt.Rows[0]["ID_FASE_IN_PROGRESS"].ToString());
+                    if (dt.Rows[0]["HAS_FASE_0"].ToString() == "1")
+                        hasStage0 = true;
+                    championshipType = dt.Rows[0]["SG_TIPO_CAMPEONATO"].ToString();
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["ID_CAMPEONATO_ORIGEM"].ToString()))
+                        championshipIDSource = Convert.ToInt16(dt.Rows[0]["ID_CAMPEONATO_ORIGEM"].ToString());
+
+                    LineUpViewModel.championshipName = dt.Rows[0]["NM_CAMPEONATO"].ToString();
+                    LineUpViewModel.championshipID = model.id;
+                    LineUpViewModel.firstStageIDPlayoff = firstStageIDPlayoff;
+                    LineUpViewModel.totalStagesPlayoff = totalStagesPlayoff;
+                    LineUpViewModel.firstStageID = firstStageID;
+                    LineUpViewModel.stageIDInProgress = stageIDInProgress;
+
+                    if (stageIDInProgress <= ID_STAGE_0)
+                    {
+                        LineUpViewModel.titleLineUp = "PREVISÃO DOS CONFRONTOS - " + dt.Rows[0]["NM_FIRST_FASE_PLAYOFF"].ToString().ToUpper();
+                        LineUpViewModel.clashesDefined = false;
+                    }
+                    else
+                    {
+                        LineUpViewModel.titleLineUp = "CONFRONTOS - " + dt.Rows[0]["NM_FASE_IN_PROGRESS"].ToString().ToUpper();
+                        LineUpViewModel.clashesDefined = true;
+                    }
+
+                    LineUpViewModel.firstStageIsQualify = false;
+                    if (firstStageID < ID_STAGE_0) { LineUpViewModel.firstStageIsQualify = true; }
+
+                    LineUpViewModel.listOfStage2 = new List<ChampionshipLineUpDetailsModel>();
+                    LineUpViewModel.listOfRound16 = new List<ChampionshipLineUpDetailsModel>();
+                    LineUpViewModel.listOfQuarter = new List<ChampionshipLineUpDetailsModel>();
+                    LineUpViewModel.listOfSemi = new List<ChampionshipLineUpDetailsModel>();
+                    LineUpViewModel.listOfGrandFinal = new List<ChampionshipLineUpDetailsModel>();
+                    LineUpViewModel.championTeamName = "CAMPEÃO";
+
+                    if (stageIDInProgress < ID_STAGE_0)
+                        LineUpViewModel.messageNotFoundClashes = "A Fase de Qualificação ainda está em andamento, aguarde que assim que terminar será gerada, por sorteio, a próxima fase e esta tela irá mostrar toda a 'árvore' dos confrontos";
+                    else
+                    {
+                        List<ChampionshipTeamTableDetailsModel>  listOfForecastTeamQualified = new List<ChampionshipTeamTableDetailsModel>();
+                        List<ChampionshipTeamTableDetailsModel>  listOfForecastTeamQualifiedThirdPlace = new List<ChampionshipTeamTableDetailsModel>();
+                        ChampionshipTeamTableDetailsModel teamTableDetailsModel = new ChampionshipTeamTableDetailsModel();
+                        StringBuilder strConcat = new StringBuilder();
+                        string[] teamsQualified = { };
+
+                        int totalGroup = Convert.ToInt16(dt.Rows[0]["QT_GRUPOS"].ToString());
+                        int groupIDInitial = 0;
+                        if (totalGroup>0) { groupIDInitial = 1; }
+                        int totalQualified = Convert.ToInt16(dt.Rows[0]["QT_TIMES_CLASSIFICADOS"].ToString());
+
+                        for (int j = groupIDInitial; j <= totalGroup; j++)
+                        {
+                            paramName = new string[] { "pIdCamp", "pIdGrupo", "pTotalQualified" };
+                            paramValue = new string[] { model.id.ToString(), j.ToString(), totalQualified.ToString() };
+                            dt = db.executePROC("spGetAllClassificacaoTimeOfCampeonatoByGrupo", paramName, paramValue);
+
+                            for (int i = 0; i < dt.Rows.Count; i++)
+                            {
+                                teamTableDetailsModel = new ChampionshipTeamTableDetailsModel();
+                                teamTableDetailsModel.teamID = Convert.ToInt32(dt.Rows[i]["ID_TIME"].ToString());
+                                listOfForecastTeamQualified.Add(teamTableDetailsModel);
+                            }
+                        }
+
+                        if (listOfForecastTeamQualified.Count > 0)
+                        {
+                            strConcat.Clear();
+                            foreach (ChampionshipTeamTableDetailsModel item in listOfForecastTeamQualified)
+                            {
+                                if (strConcat.ToString() != string.Empty) { strConcat.Append(","); }
+                                strConcat.Append(item.teamID.ToString());
+                            }
+
+                            paramName = new string[] { "pIdCamp", "pIdsTime" };
+                            paramValue = new string[] { model.id.ToString(), strConcat.ToString() };
+                            dt = db.executePROC("spGetLoadClassificacaoTimeOfCampeonato", paramName, paramValue);
+
+                            for (int i = 0; i < dt.Rows.Count; i++)
+                            {
+                                Array.Resize(ref teamsQualified, teamsQualified.Length + 1);
+                                if (dt.Rows[i]["NM_TIME"].ToString().Length > 20)
+                                    teamsQualified[i] = GlobalFunctions.UppercaseWords(dt.Rows[i]["NM_TIME"].ToString().ToLower().Substring(0,19));
+                                else
+                                    teamsQualified[i] = GlobalFunctions.UppercaseWords(dt.Rows[i]["NM_TIME"].ToString().ToLower());
+
+                            }
+                        }
+
+
+                        LineUpViewModel.messageNotFoundClashes = String.Empty;
+
+                        if (!LineUpViewModel.clashesDefined)
+                        {
+                            if (firstStageIDPlayoff == ID_STAGE_FINAL)
+                            {
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "Campeão Liga Campeões";
+                                LineUpDetailsModel.teamName2 = "Campeão Liga Europa";
+                                LineUpViewModel.listOfGrandFinal.Add(LineUpDetailsModel);
+                            }
+                            else if (firstStageIDPlayoff == ID_STAGE_SEMI)
+                            {
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "1º Lugar";
+                                LineUpDetailsModel.teamName2 = "4º Lugar";
+                                LineUpDetailsModel.teamName3 = "2º Lugar";
+                                LineUpDetailsModel.teamName4 = "3º Lugar";
+                                LineUpViewModel.listOfSemi.Add(LineUpDetailsModel);
+
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "Vencedor Semi 1";
+                                LineUpDetailsModel.teamName2 = "Vencedor Semi 2";
+                                LineUpViewModel.listOfGrandFinal.Add(LineUpDetailsModel);
+                            }
+                            else if (firstStageIDPlayoff == ID_STAGE_QUARTER && hasStage0)
+                            {
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                if (teamsQualified==null)
+                                {
+                                    LineUpDetailsModel.teamName1 = "1º Lugar";
+                                    LineUpDetailsModel.teamName2 = "8º Lugar";
+                                    LineUpDetailsModel.teamName3 = "4º Lugar";
+                                    LineUpDetailsModel.teamName4 = "5º Lugar";
+                                    LineUpDetailsModel.teamName5 = "2º Lugar";
+                                    LineUpDetailsModel.teamName6 = "7º Lugar";
+                                    LineUpDetailsModel.teamName7 = "3º Lugar";
+                                    LineUpDetailsModel.teamName8 = "6º Lugar";
+                                }
+                                else
+                                {
+                                    LineUpDetailsModel.teamName1 = teamsQualified[0];
+                                    LineUpDetailsModel.teamName2 = teamsQualified[7];
+                                    LineUpDetailsModel.teamName3 = teamsQualified[3];
+                                    LineUpDetailsModel.teamName4 = teamsQualified[4];
+                                    LineUpDetailsModel.teamName5 = teamsQualified[1];
+                                    LineUpDetailsModel.teamName6 = teamsQualified[6];
+                                    LineUpDetailsModel.teamName7 = teamsQualified[2];
+                                    LineUpDetailsModel.teamName8 = teamsQualified[5];
+                                }
+                                LineUpViewModel.listOfQuarter.Add(LineUpDetailsModel);
+
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "Vencedor Quartas 1";
+                                LineUpDetailsModel.teamName2 = "Vencedor Quartas 2";
+                                LineUpDetailsModel.teamName3 = "Vencedor Quartas 3";
+                                LineUpDetailsModel.teamName4 = "Vencedor Quartas 4";
+                                LineUpViewModel.listOfSemi.Add(LineUpDetailsModel);
+
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "Vencedor Semi 1";
+                                LineUpDetailsModel.teamName2 = "Vencedor Semi 2";
+                                LineUpViewModel.listOfGrandFinal.Add(LineUpDetailsModel);
+                            }
+                            else if (firstStageIDPlayoff == ID_STAGE_ROUND16 && hasStage0)
+                            {
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                if (championshipType == "CPDM")
+                                {
+                                    LineUpDetailsModel.teamName1 = "1º do Grupo 1";
+                                    LineUpDetailsModel.teamName2 = "2º  do Grupo 2";
+                                    LineUpDetailsModel.teamName3 = "1º do Grupo 3";
+                                    LineUpDetailsModel.teamName4 = "2º do Grupo 4";
+                                    LineUpDetailsModel.teamName5 = "1º do Grupo 2";
+                                    LineUpDetailsModel.teamName6 = "2º do Grupo 1";
+                                    LineUpDetailsModel.teamName7 = "1º do Grupo 4";
+                                    LineUpDetailsModel.teamName8 = "2º do Grupo 3";
+                                    LineUpDetailsModel.teamName9 = "1º do Grupo 5";
+                                    LineUpDetailsModel.teamName10 = "2º do Grupo 6";
+                                    LineUpDetailsModel.teamName11 = "1º do Grupo 7";
+                                    LineUpDetailsModel.teamName12 = "2º do Grupo 8";
+                                    LineUpDetailsModel.teamName13 = "1º do Grupo 6";
+                                    LineUpDetailsModel.teamName14 = "2º do Grupo 5";
+                                    LineUpDetailsModel.teamName15 = "1º do Grupo 8";
+                                    LineUpDetailsModel.teamName16 = "2º do Grupo 7";
+                                }
+                                else if (championshipType == "CPSA" && championshipIDSource > 0)
+                                {
+                                    LineUpDetailsModel.teamName1 = "1º Lugar";
+                                    LineUpDetailsModel.teamName2 = "8º melhor 3º da LCE";
+                                    LineUpDetailsModel.teamName3 = "8º Lugar";
+                                    LineUpDetailsModel.teamName4 = "1º melhor 3º da LCE";
+                                    LineUpDetailsModel.teamName5 = "3º Lugar";
+                                    LineUpDetailsModel.teamName6 = "6º melhor 3º da LCE";
+                                    LineUpDetailsModel.teamName7 = "7º Lugar";
+                                    LineUpDetailsModel.teamName8 = "2º melhor 3º da LCE";
+                                    LineUpDetailsModel.teamName9 = "2º Lugar";
+                                    LineUpDetailsModel.teamName10 = "7º melhor 3º da LCE";
+                                    LineUpDetailsModel.teamName11 = "6º Lugar";
+                                    LineUpDetailsModel.teamName12 = "3º melhor 3º da LCE";
+                                    LineUpDetailsModel.teamName13 = "4º Lugar";
+                                    LineUpDetailsModel.teamName14 = "5º melhor 3º da LCE";
+                                    LineUpDetailsModel.teamName15 = "5º Lugar";
+                                    LineUpDetailsModel.teamName16 = "4º melhor 3º da LCE";
+                                }
+                                else
+                                {
+                                    if (teamsQualified==null)
+                                    {
+                                        LineUpDetailsModel.teamName1 = "1º Lugar";
+                                        LineUpDetailsModel.teamName2 = "16º Lugar";
+                                        LineUpDetailsModel.teamName3 = "8º Lugar";
+                                        LineUpDetailsModel.teamName4 = "9º Lugar";
+                                        LineUpDetailsModel.teamName5 = "3º Lugar";
+                                        LineUpDetailsModel.teamName6 = "14º Lugar";
+                                        LineUpDetailsModel.teamName7 = "7º Lugar";
+                                        LineUpDetailsModel.teamName8 = "10º Lugar";
+                                        LineUpDetailsModel.teamName9 = "2º Lugar";
+                                        LineUpDetailsModel.teamName10 = "15º Lugar";
+                                        LineUpDetailsModel.teamName11 = "6º Lugar";
+                                        LineUpDetailsModel.teamName12 = "11º Lugar";
+                                        LineUpDetailsModel.teamName13 = "4º Lugar";
+                                        LineUpDetailsModel.teamName14 = "13º Lugar";
+                                        LineUpDetailsModel.teamName15 = "5º Lugar";
+                                        LineUpDetailsModel.teamName16 = "12º Lugar";
+                                    }
+                                    else
+                                    {
+                                        LineUpDetailsModel.teamName1 = teamsQualified[0];
+                                        LineUpDetailsModel.teamName2 = teamsQualified[15];
+                                        LineUpDetailsModel.teamName3 = teamsQualified[7];
+                                        LineUpDetailsModel.teamName4 = teamsQualified[8];
+                                        LineUpDetailsModel.teamName5 = teamsQualified[2];
+                                        LineUpDetailsModel.teamName6 = teamsQualified[13];
+                                        LineUpDetailsModel.teamName7 = teamsQualified[6];
+                                        LineUpDetailsModel.teamName8 = teamsQualified[9];
+                                        LineUpDetailsModel.teamName9 = teamsQualified[1];
+                                        LineUpDetailsModel.teamName10 = teamsQualified[14];
+                                        LineUpDetailsModel.teamName11 = teamsQualified[5];
+                                        LineUpDetailsModel.teamName12 = teamsQualified[10];
+                                        LineUpDetailsModel.teamName13 = teamsQualified[3];
+                                        LineUpDetailsModel.teamName14 = teamsQualified[12];
+                                        LineUpDetailsModel.teamName15 = teamsQualified[4];
+                                        LineUpDetailsModel.teamName16 = teamsQualified[11];
+                                    }
+                                }
+                                LineUpViewModel.listOfRound16.Add(LineUpDetailsModel);
+
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "Vencedor Oitavas 1";
+                                LineUpDetailsModel.teamName2 = "Vencedor Oitavas 2";
+                                LineUpDetailsModel.teamName3 = "Vencedor Oitavas 3";
+                                LineUpDetailsModel.teamName4 = "Vencedor Oitavas 4";
+                                LineUpDetailsModel.teamName5 = "Vencedor Oitavas 5";
+                                LineUpDetailsModel.teamName6 = "Vencedor Oitavas 6";
+                                LineUpDetailsModel.teamName7 = "Vencedor Oitavas 7";
+                                LineUpDetailsModel.teamName8 = "Vencedor Oitavas 8";
+                                LineUpViewModel.listOfQuarter.Add(LineUpDetailsModel);
+
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "Vencedor Quartas 1";
+                                LineUpDetailsModel.teamName2 = "Vencedor Quartas 2";
+                                LineUpDetailsModel.teamName3 = "Vencedor Quartas 3";
+                                LineUpDetailsModel.teamName4 = "Vencedor Quartas 4";
+                                LineUpViewModel.listOfSemi.Add(LineUpDetailsModel);
+
+                                LineUpDetailsModel = new ChampionshipLineUpDetailsModel();
+                                LineUpDetailsModel.teamName1 = "Vencedor Semi 1";
+                                LineUpDetailsModel.teamName2 = "Vencedor Semi 2";
+                                LineUpViewModel.listOfGrandFinal.Add(LineUpDetailsModel);
+                            }
+                        }
+                        listOfForecastTeamQualified = null;
+                        listOfForecastTeamQualifiedThirdPlace = null;
+                        teamTableDetailsModel = null;
+                        strConcat = null;
+                    }
+
+                    LineUpViewModel.returnMessage = "CurrentSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, LineUpViewModel);
+                }
                 else
                 {
                     return StatusCode(HttpStatusCode.NotAcceptable);
@@ -155,8 +555,12 @@ namespace ArenaFifa20.API.NET.Controllers
                 modelDetails = null;
                 mainModel = null;
                 listOfModel = null;
+                calendarViewModel = null;
+                calendarDetailsModel = null;
+                LineUpViewModel = null;
+                LineUpListModel = null;
+                LineUpDetailsModel = null;
             }
-
 
         }
 
@@ -173,68 +577,14 @@ namespace ArenaFifa20.API.NET.Controllers
             ChampionshipTeamDetailsModel teamDetails = new ChampionshipTeamDetailsModel();
             List<ChampionshipTeamDetailsModel> listOfTeam = new List<ChampionshipTeamDetailsModel>();
 
-            ChampionshipStageDetailsModel stageDetails = new ChampionshipStageDetailsModel();
-            List<ChampionshipStageDetailsModel> listOfStage = new List<ChampionshipStageDetailsModel>();
-
             DataTable dt = null;
             db.openConnection();
 
 
             try
             {
-                paramName = new string[] { "pIdCamp" };
-                paramValue = new string[] { Convert.ToString(id) };
-                dt = db.executePROC("spGetCampeonatosDetails", paramName, paramValue);
 
-                if (dt.Rows.Count > 0)
-                {
-                    modelDetails.id = Convert.ToInt32(dt.Rows[0]["ID_CAMPEONATO"].ToString());
-                    modelDetails.seasonID = Convert.ToInt32(dt.Rows[0]["ID_TEMPORADA"].ToString());
-                    modelDetails.name = dt.Rows[0]["NM_CAMPEONATO"].ToString();
-                    modelDetails.seasonName = dt.Rows[0]["NM_Temporada"].ToString();
-                    modelDetails.type = dt.Rows[0]["SG_TIPO_CAMPEONATO"].ToString();
-                    modelDetails.typeName = dt.Rows[0]["DS_TIPO_CAMPEONATO"].ToString();
-                    modelDetails.modeType = dt.Rows[0]["TIPO_CAMPEONATO"].ToString();
-                    modelDetails.active = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_ATIVO"].ToString());
-                    //modelDetails.startDateFormatted = dt.Rows[0]["DT_INICIO_FORMATADA"].ToString();
-                    //modelDetails.drawDateFormatted = dt.Rows[0]["DT_SORTEIO_FORMATADA"].ToString();
-                    modelDetails.startDate = Convert.ToDateTime(dt.Rows[0]["DT_INICIO"].ToString());
-                    modelDetails.drawDate = Convert.ToDateTime(dt.Rows[0]["DT_SORTEIO"].ToString());
-
-
-                    modelDetails.totalTeam = Convert.ToInt16(dt.Rows[0]["QT_TIMES"].ToString());
-                    modelDetails.totalGroup = Convert.ToInt16(dt.Rows[0]["QT_GRUPOS"].ToString());
-                    modelDetails.totalQualify = Convert.ToInt16(dt.Rows[0]["QT_TIMES_CLASSIFICADOS"].ToString());
-                    modelDetails.totalRelegation = Convert.ToInt16(dt.Rows[0]["QT_TIMES_REBAIXADOS"].ToString());
-                    modelDetails.totalDayStageOne = Convert.ToInt16(dt.Rows[0]["QT_DIAS_PARTIDA_CLASSIFICACAO"].ToString());
-                    modelDetails.totalDayStagePlayoff = Convert.ToInt16(dt.Rows[0]["QT_DIAS_PARTIDA_FASE_MATAxMATA"].ToString());
-                    modelDetails.totalQualifyNextStage = Convert.ToInt16(dt.Rows[0]["QT_TIMES_PROX_CLASSIF"].ToString());
-                    modelDetails.totalTeamQualifyDivAbove = Convert.ToInt16(dt.Rows[0]["QT_TIMES_ACESSO"].ToString());
-
-                    modelDetails.forGroup = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_GRUPO"].ToString());
-                    modelDetails.justOneTurn = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_TURNO_UNICO"].ToString());
-                    modelDetails.twoTurns = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_TURNO_RETURNO"].ToString());
-                    modelDetails.playoff = Convert.ToBoolean(dt.Rows[0]["IN_SISTEMA_MATA"].ToString());
-                    modelDetails.twoLegs = Convert.ToBoolean(dt.Rows[0]["IN_SISTEMA_IDA_VOLTA"].ToString());
-
-                    modelDetails.console = dt.Rows[0]["IN_CONSOLE"].ToString();
-
-                    modelDetails.userID1 = Convert.ToInt32(dt.Rows[0]["ID_USUARIO_MODERADOR"].ToString());
-                    modelDetails.userName1 = dt.Rows[0]["NM_Usuario"].ToString();
-                    modelDetails.psnID1 = dt.Rows[0]["PSN_ID"].ToString();
-
-                    modelDetails.userID2 = Convert.ToInt32(dt.Rows[0]["ID_USUARIO_2oMODERADOR"].ToString());
-                    modelDetails.userName2 = dt.Rows[0]["NM_Usuario2"].ToString();
-                    modelDetails.psnID2 = dt.Rows[0]["PSN_ID2"].ToString();
-
-                    modelDetails.stageID_Round = dt.Rows[0]["ID_FASE_NUMERO_RODADA"].ToString(); 
-
-                    modelDetails.started = Convert.ToInt32(dt.Rows[0]["inInicioCampeonato"].ToString());
-                    if (!String.IsNullOrEmpty(dt.Rows[0]["idPrimFaseCampeonato"].ToString()))
-                        modelDetails.firstStageID = Convert.ToInt32(dt.Rows[0]["idPrimFaseCampeonato"].ToString());
-                    else
-                        modelDetails.firstStageID = 99;
-                }
+                modelDetails = GlobalFunctions.getChampionshipDetails(db, id);
 
                 paramName = new string[] { "pIdCamp" };
                 paramValue = new string[] { Convert.ToString(id) };
@@ -262,19 +612,6 @@ namespace ArenaFifa20.API.NET.Controllers
                     listOfTeam.Add(teamDetails);
                 }
                 modelDetails.listOfTeam = listOfTeam;
-
-
-                paramName = new string[] { "pIdCamp" };
-                paramValue = new string[] { Convert.ToString(id) };
-                dt = db.executePROC("spGetAllFasePorCampeonato", paramName, paramValue);
-                for (var i = 0; i < dt.Rows.Count; i++)
-                {
-                    stageDetails = new ChampionshipStageDetailsModel();
-                    stageDetails.id = Convert.ToInt16(dt.Rows[i]["ID_FASE"].ToString());
-                    stageDetails.name = dt.Rows[i]["NM_FASE"].ToString();
-                    listOfStage.Add(stageDetails);
-                }
-                modelDetails.listOfStage = listOfStage;
 
 
                 paramName = new string[] { "pIdCamp" };
@@ -326,10 +663,8 @@ namespace ArenaFifa20.API.NET.Controllers
                 modelDetails = null;
                 userDetails = null;
                 teamDetails = null;
-                stageDetails = null;
                 listOfUser = null;
                 listOfTeam = null;
-                listOfStage = null;
                 dt = null;
             }
 

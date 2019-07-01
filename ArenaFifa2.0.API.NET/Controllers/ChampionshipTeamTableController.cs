@@ -52,6 +52,8 @@ namespace ArenaFifa20.API.NET.Controllers
                     modelDetails.teamName = dt.Rows[i]["NM_TIME"].ToString();
                     modelDetails.teamType = dt.Rows[i]["DS_TIPO"].ToString();
                     modelDetails.teamURL = dt.Rows[i]["DS_URL_TIME"].ToString();
+                    modelDetails.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
+                    modelDetails.userName = dt.Rows[i]["NM_USUARIO"].ToString();
                     modelDetails.psnID = dt.Rows[i]["PSN_ID"].ToString();
                     if (!String.IsNullOrEmpty(dt.Rows[i]["IN_TIME_EXCLUIDO_TEMP_ATUAL"].ToString()))
                         modelDetails.deletedCurrentSeason = Convert.ToInt16(dt.Rows[i]["IN_TIME_EXCLUIDO_TEMP_ATUAL"].ToString());

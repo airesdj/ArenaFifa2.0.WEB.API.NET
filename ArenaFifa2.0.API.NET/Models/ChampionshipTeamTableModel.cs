@@ -30,6 +30,8 @@ namespace ArenaFifa20.API.NET.Models
             public string teamName { get; set; }
             public string teamURL { get; set; }
             public string teamType { get; set; }
+            public int userID { get; set; }
+            public string userName { get; set; }
             public string psnID { get; set; }
             public int deletedCurrentSeason { get; set; }
             public int previousPosition { get; set; }

@@ -51,12 +51,34 @@ namespace ArenaFifa20.API.NET.Models
             public string modeType { get; set; }
             public int userIDAction { get; set; }
             public string psnIDAction { get; set; }
+            public string psnIDSearch { get; set; }
             public string messageBlackList { get; set; }
             public string typeBlackList { get; set; }
             public int totalRecordsOfHistoric { get; set; }
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
+
+        public class ChampionshipMatchTableClashesHistoryTotalswModel
+        {
+            public int userIDLogged { get; set; }
+            public string psnIDLogged { get; set; }
+            public int userIDSearch { get; set; }
+            public string psnIDSearch { get; set; }
+            public int totalWinUsuLogged { get; set; }
+            public int totalWinUsuSearch { get; set; }
+            public int totalDraw { get; set; }
+            public int totalLossUsuLogged { get; set; }
+            public int totalLossUsuSearch { get; set; }
+            public int totalGoalsUsuLogged { get; set; }
+            public int totalGoalsUsuSearch { get; set; }
+            public List<ChampionshipMatchTableDetailsModel> listOfMatchWinUsuLogged { get; set; }
+            public List<ChampionshipMatchTableDetailsModel> listOfMatchDraw { get; set; }
+            public List<ChampionshipMatchTableDetailsModel> listOfMatchWinUsuSearch { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
+        }
+
 
     }
 }

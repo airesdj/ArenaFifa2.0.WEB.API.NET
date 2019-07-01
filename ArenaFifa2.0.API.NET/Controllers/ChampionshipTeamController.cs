@@ -40,6 +40,9 @@ namespace ArenaFifa20.API.NET.Controllers
                     modelDetails.id = Convert.ToInt32(dt.Rows[i]["ID_TIME"].ToString());
                     modelDetails.name = dt.Rows[i]["NM_TIME"].ToString();
                     modelDetails.type = dt.Rows[i]["DS_TIPO"].ToString();
+                    modelDetails.userID = Convert.ToInt32(dt.Rows[i]["ID_Usuario"].ToString());
+                    modelDetails.userName = dt.Rows[i]["NM_Usuario"].ToString();
+                    modelDetails.psnID = dt.Rows[i]["psn_id"].ToString();
                     listOfModel.Add(modelDetails);
                 }
 

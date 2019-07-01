@@ -7,6 +7,7 @@ using System.Data;
 using System.Web.Http;
 using DBConnection;
 using static ArenaFifa20.API.NET.Models.ScorerModel;
+using static ArenaFifa20.API.NET.Models.CurrentSeasonModel;
 
 namespace ArenaFifa20.API.NET.Controllers
 {
@@ -22,6 +23,7 @@ namespace ArenaFifa20.API.NET.Controllers
         {
 
             ScorerViewModel mainModel = new ScorerViewModel();
+            CurrentSeasonSummaryViewModel mainViewModel = new CurrentSeasonSummaryViewModel();
             db.openConnection();
             DataTable dt = null;
 
@@ -56,6 +58,12 @@ namespace ArenaFifa20.API.NET.Controllers
                     mainModel.returnMessage = "ModeratorSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
                 }
+                else if (model.actionUser == "getListOfScorerByChampionship")
+                {
+                    mainViewModel.listOfScorers = GlobalFunctions.getListScorers(String.Empty, db, 0, false, model.id);
+                    mainViewModel.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, mainViewModel);
+                }
                 else if (model.actionUser == "getListOfScorerByMatchTeam")
                 {
                     paramName = new string[] { "pIdJogo", "pIdTime" };
@@ -82,7 +90,7 @@ namespace ArenaFifa20.API.NET.Controllers
                 db.closeConnection();
                 dt = null;
                 mainModel = null;
-
+                mainViewModel = null;
             }
         }
 

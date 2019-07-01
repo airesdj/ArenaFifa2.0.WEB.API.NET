@@ -5,6 +5,8 @@ using System.Data;
 using System.Linq;
 using System.Web;
 using static ArenaFifa20.API.NET.Models.ChampionshipMatchTableModel;
+using static ArenaFifa20.API.NET.Models.ChampionshipModel;
+using static ArenaFifa20.API.NET.Models.ChampionshipStageModel;
 using static ArenaFifa20.API.NET.Models.MyMatchesModel;
 using static ArenaFifa20.API.NET.Models.ScorerModel;
 
@@ -209,5 +211,242 @@ namespace ArenaFifa20.API.NET
         }
 
 
+        public static List<ChampionshipDetailsModel> getAllActiveChampionshipCurrentSeason(connectionMySQL db, int championshipID, string modeType)
+        {
+            ChampionshipDetailsModel modelDetails = new ChampionshipDetailsModel();
+            List<ChampionshipDetailsModel> listOfModel = new List<ChampionshipDetailsModel>();
+            DataTable dt = null;
+            string[] paramName = null;
+            string[] paramValue = null;
+
+            try
+            {
+                paramName = new string[] { "pIdTemporada" };
+                paramValue = new string[] { "0" };
+                dt = db.executePROC("spGetAllCampeonatosActiveOfTemporada", paramName, paramValue);
+
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    if (dt.Rows[i]["ID_CAMPEONATO"].ToString() != championshipID.ToString() && (dt.Rows[i]["MODE_TYPE"].ToString()== modeType || modeType==String.Empty))
+                    {
+                        modelDetails = new ChampionshipDetailsModel();
+                        modelDetails.id = Convert.ToInt32(dt.Rows[i]["ID_CAMPEONATO"].ToString());
+                        modelDetails.seasonID = Convert.ToInt32(dt.Rows[i]["ID_TEMPORADA"].ToString());
+                        modelDetails.seasonName = dt.Rows[i]["NM_TEMPORADA"].ToString();
+                        modelDetails.name = dt.Rows[i]["NM_CAMPEONATO"].ToString();
+                        modelDetails.type = dt.Rows[i]["SG_TIPO_CAMPEONATO"].ToString();
+                        modelDetails.modeType = dt.Rows[i]["MODE_TYPE"].ToString();
+                        modelDetails.totalTeam = Convert.ToInt32(dt.Rows[i]["QT_TIMES"].ToString());
+                        modelDetails.startDate = Convert.ToDateTime(dt.Rows[i]["DT_INICIO"].ToString());
+                        modelDetails.drawDate = Convert.ToDateTime(dt.Rows[i]["DT_SORTEIO"].ToString());
+                        modelDetails.active = Convert.ToBoolean(dt.Rows[i]["IN_CAMPEONATO_ATIVO"].ToString());
+
+                        listOfModel.Add(modelDetails);
+                    }
+                }
+
+                return listOfModel;
+            }
+            catch(Exception ex)
+            {
+                return listOfModel;
+            }
+            finally
+            {
+                modelDetails = null;
+                listOfModel = null;
+                dt = null;
+                paramName = null;
+                paramValue = null;
+            }
+
+        }
+
+
+        public static ChampionshipDetailsModel getChampionshipDetails(connectionMySQL db, int championshipID)
+        {
+            ChampionshipDetailsModel modelDetails = new ChampionshipDetailsModel();
+            ChampionshipStageDetailsModel stageDetails = new ChampionshipStageDetailsModel();
+            List<ChampionshipStageDetailsModel> listOfStage = new List<ChampionshipStageDetailsModel>();
+
+            DataTable dt = null;
+            string[] paramName = null;
+            string[] paramValue = null;
+
+            try
+            {
+                paramName = new string[] { "pIdCamp" };
+                paramValue = new string[] { Convert.ToString(championshipID) };
+                dt = db.executePROC("spGetCampeonatosDetails", paramName, paramValue);
+
+                if (dt.Rows.Count > 0)
+                {
+                    modelDetails.id = Convert.ToInt32(dt.Rows[0]["ID_CAMPEONATO"].ToString());
+                    modelDetails.seasonID = Convert.ToInt32(dt.Rows[0]["ID_TEMPORADA"].ToString());
+                    modelDetails.name = dt.Rows[0]["NM_CAMPEONATO"].ToString();
+                    modelDetails.seasonName = dt.Rows[0]["NM_Temporada"].ToString();
+                    modelDetails.type = dt.Rows[0]["SG_TIPO_CAMPEONATO"].ToString();
+                    modelDetails.typeName = dt.Rows[0]["DS_TIPO_CAMPEONATO"].ToString();
+                    modelDetails.modeType = dt.Rows[0]["TIPO_CAMPEONATO"].ToString();
+                    modelDetails.active = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_ATIVO"].ToString());
+                    //modelDetails.startDateFormatted = dt.Rows[0]["DT_INICIO_FORMATADA"].ToString();
+                    //modelDetails.drawDateFormatted = dt.Rows[0]["DT_SORTEIO_FORMATADA"].ToString();
+                    modelDetails.startDate = Convert.ToDateTime(dt.Rows[0]["DT_INICIO"].ToString());
+                    modelDetails.drawDate = Convert.ToDateTime(dt.Rows[0]["DT_SORTEIO"].ToString());
+
+
+                    modelDetails.totalTeam = Convert.ToInt16(dt.Rows[0]["QT_TIMES"].ToString());
+                    modelDetails.totalGroup = Convert.ToInt16(dt.Rows[0]["QT_GRUPOS"].ToString());
+                    modelDetails.totalQualify = Convert.ToInt16(dt.Rows[0]["QT_TIMES_CLASSIFICADOS"].ToString());
+                    modelDetails.totalRelegation = Convert.ToInt16(dt.Rows[0]["QT_TIMES_REBAIXADOS"].ToString());
+                    modelDetails.totalDayStageOne = Convert.ToInt16(dt.Rows[0]["QT_DIAS_PARTIDA_CLASSIFICACAO"].ToString());
+                    modelDetails.totalDayStagePlayoff = Convert.ToInt16(dt.Rows[0]["QT_DIAS_PARTIDA_FASE_MATAxMATA"].ToString());
+                    modelDetails.totalQualifyNextStage = Convert.ToInt16(dt.Rows[0]["QT_TIMES_PROX_CLASSIF"].ToString());
+                    modelDetails.totalTeamQualifyDivAbove = Convert.ToInt16(dt.Rows[0]["QT_TIMES_ACESSO"].ToString());
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["IN_POSICAO_ORIGEM"].ToString()))
+                    {
+                        modelDetails.sourcePlaceFromChampionshipSource = Convert.ToInt16(dt.Rows[0]["IN_POSICAO_ORIGEM"].ToString());
+                        if (!String.IsNullOrEmpty(dt.Rows[0]["ID_CAMPEONATO_DESTINO"].ToString()))
+                            modelDetails.ChampionshipIDDestiny = Convert.ToInt16(dt.Rows[0]["ID_CAMPEONATO_DESTINO"].ToString());
+                        if (!String.IsNullOrEmpty(dt.Rows[0]["ID_CAMPEONATO_ORIGEM"].ToString()))
+                            modelDetails.ChampionshipIDSource = Convert.ToInt16(dt.Rows[0]["ID_CAMPEONATO_ORIGEM"].ToString());
+                    }
+
+                    modelDetails.forGroup = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_GRUPO"].ToString());
+                    modelDetails.justOneTurn = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_TURNO_UNICO"].ToString());
+                    modelDetails.twoTurns = Convert.ToBoolean(dt.Rows[0]["IN_CAMPEONATO_TURNO_RETURNO"].ToString());
+                    modelDetails.playoff = Convert.ToBoolean(dt.Rows[0]["IN_SISTEMA_MATA"].ToString());
+                    modelDetails.twoLegs = Convert.ToBoolean(dt.Rows[0]["IN_SISTEMA_IDA_VOLTA"].ToString());
+
+                    modelDetails.console = dt.Rows[0]["IN_CONSOLE"].ToString();
+
+                    modelDetails.userID1 = Convert.ToInt32(dt.Rows[0]["ID_USUARIO_MODERADOR"].ToString());
+                    modelDetails.userName1 = dt.Rows[0]["NM_Usuario"].ToString();
+                    modelDetails.psnID1 = dt.Rows[0]["PSN_ID"].ToString();
+                    modelDetails.email1 = dt.Rows[0]["DS_EMAIL"].ToString();
+
+                    modelDetails.userID2 = Convert.ToInt32(dt.Rows[0]["ID_USUARIO_2oMODERADOR"].ToString());
+                    modelDetails.userName2 = dt.Rows[0]["NM_Usuario2"].ToString();
+                    modelDetails.psnID2 = dt.Rows[0]["PSN_ID2"].ToString();
+                    modelDetails.email2 = dt.Rows[0]["DS_EMAIL2"].ToString();
+
+                    modelDetails.stageID_Round = dt.Rows[0]["ID_FASE_NUMERO_RODADA"].ToString();
+
+                    modelDetails.started = Convert.ToInt32(dt.Rows[0]["inInicioCampeonato"].ToString());
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["idPrimFaseCampeonato"].ToString()))
+                        modelDetails.firstStageID = Convert.ToInt32(dt.Rows[0]["idPrimFaseCampeonato"].ToString());
+                    else
+                        modelDetails.firstStageID = 99;
+
+
+                    paramName = new string[] { "pIdCamp" };
+                    paramValue = new string[] { Convert.ToString(championshipID) };
+                    dt = db.executePROC("spGetAllFasePorCampeonato", paramName, paramValue);
+                    for (var i = 0; i < dt.Rows.Count; i++)
+                    {
+                        stageDetails = new ChampionshipStageDetailsModel();
+                        stageDetails.id = Convert.ToInt16(dt.Rows[i]["ID_FASE"].ToString());
+                        stageDetails.name = dt.Rows[i]["NM_FASE"].ToString();
+                        listOfStage.Add(stageDetails);
+                    }
+                    modelDetails.listOfStage = listOfStage;
+                }
+
+                return modelDetails;
+            }
+            catch (Exception ex)
+            {
+                return modelDetails;
+            }
+            finally
+            {
+                modelDetails = null;
+                dt = null;
+                paramName = null;
+                paramValue = null;
+                stageDetails = null;
+                listOfStage = null;
+            }
+        }
+
+
+        public static ChampionshipMatchTableDetailsModel setDetailsChampionshipMatchTable(DataRow rowMatchTable)
+        {
+            ChampionshipMatchTableDetailsModel modelDetails = new ChampionshipMatchTableDetailsModel();
+
+            try
+            {
+                modelDetails = new ChampionshipMatchTableDetailsModel();
+                modelDetails.matchID = Convert.ToInt16(rowMatchTable["ID_TABELA_JOGO"].ToString());
+                modelDetails.championshipID = Convert.ToInt16(rowMatchTable["ID_CAMPEONATO"].ToString());
+                modelDetails.championshipName = rowMatchTable["NM_CAMPEONATO"].ToString();
+                modelDetails.stageID = Convert.ToInt16(rowMatchTable["ID_FASE"].ToString());
+                modelDetails.stageName = rowMatchTable["NM_FASE"].ToString();
+                modelDetails.groupID = Convert.ToInt16(rowMatchTable["ID_Grupo"].ToString());
+                if (!String.IsNullOrEmpty(rowMatchTable["NM_Grupo"].ToString()))
+                    modelDetails.groupName = rowMatchTable["NM_Grupo"].ToString();
+                modelDetails.seasonName = rowMatchTable["NM_TEMPORADA"].ToString();
+                modelDetails.startDate = Convert.ToDateTime(rowMatchTable["DT_TABELA_INICIO_JOGO"].ToString());
+                modelDetails.endDate = Convert.ToDateTime(rowMatchTable["DT_TABELA_FIM_JOGO"].ToString());
+                modelDetails.teamHomeID = Convert.ToInt16(rowMatchTable["ID_TIME_CASA"].ToString());
+                modelDetails.totalGoalsHome = rowMatchTable["QT_GOLS_TIME_CASA"].ToString();
+                modelDetails.teamAwayID = Convert.ToInt16(rowMatchTable["ID_TIME_VISITANTE"].ToString());
+                modelDetails.totalGoalsAway = rowMatchTable["QT_GOLS_TIME_VISITANTE"].ToString();
+                if (!String.IsNullOrEmpty(rowMatchTable["DT_EFETIVACAO_JOGO"].ToString()))
+                    modelDetails.launchDate = Convert.ToDateTime(rowMatchTable["DT_EFETIVACAO_JOGO"].ToString());
+                modelDetails.round = Convert.ToInt16(rowMatchTable["IN_NUMERO_RODADA"].ToString());
+                if (!String.IsNullOrEmpty(rowMatchTable["IN_JOGO_MATAXMATA"].ToString()))
+                    modelDetails.playoffGame = Convert.ToInt16(rowMatchTable["IN_JOGO_MATAXMATA"].ToString());
+                modelDetails.teamURLHome = rowMatchTable["DS_URL1"].ToString();
+                modelDetails.teamNameHome = rowMatchTable["1T"].ToString();
+                modelDetails.teamTypeHome = rowMatchTable["DT1"].ToString();
+                modelDetails.userHomeName = rowMatchTable["NM_Tecnico_TimeCasa"].ToString();
+                modelDetails.userHomeID = Convert.ToInt32(rowMatchTable["ID_USUARIO_TIME_CASA"].ToString());
+                modelDetails.psnIDHome = rowMatchTable["PSN1"].ToString();
+                modelDetails.teamURLAway = rowMatchTable["DS_URL2"].ToString();
+                modelDetails.teamNameAway = rowMatchTable["2T"].ToString();
+                modelDetails.teamTypeAway = rowMatchTable["DT2"].ToString();
+                modelDetails.userAwayName = rowMatchTable["NM_Tecnico_TimeVisitante"].ToString();
+                modelDetails.userAwayID = Convert.ToInt32(rowMatchTable["ID_USUARIO_TIME_VISITANTE"].ToString());
+                modelDetails.psnIDAway = rowMatchTable["PSN2"].ToString();
+
+                return modelDetails;
+            }
+            catch (Exception ex)
+            {
+                return modelDetails;
+            }
+            finally
+            {
+                modelDetails = null;
+            }
+        }
+
+
+        public static string UppercaseWords(string value)
+        {
+            char[] array = value.ToCharArray();
+            // Handle the first letter in the string.
+            if (array.Length >= 1)
+            {
+                if (char.IsLower(array[0]))
+                {
+                    array[0] = char.ToUpper(array[0]);
+                }
+            }
+            // Scan through the letters, checking for spaces.
+            // ... Uppercase the lowercase letters following spaces.
+            for (int i = 1; i < array.Length; i++)
+            {
+                if (array[i - 1] == ' ')
+                {
+                    if (char.IsLower(array[i]))
+                    {
+                        array[i] = char.ToUpper(array[i]);
+                    }
+                }
+            }
+            return new string(array);
+        }
     }
 }

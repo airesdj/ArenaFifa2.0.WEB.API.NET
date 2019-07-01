@@ -955,3 +955,168 @@ Begin
 	
 End$$
 DELIMITER ;
+
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetTotalsClashesHistory` $$
+CREATE PROCEDURE `spGetTotalsClashesHistory`(pType VARCHAR(3), pIdUsuLogged INTEGER, pPsnIDSearch VARCHAR(30))
+begin      
+	DECLARE _totalWinUsuLogged INTEGER DEFAULT 0;
+	DECLARE _totalWinUsuSearch INTEGER DEFAULT 0;
+	DECLARE _totalDraw INTEGER DEFAULT 0;
+	DECLARE _totalLossUsuLogged INTEGER DEFAULT 0;
+	DECLARE _totalLossUsuSearch INTEGER DEFAULT 0;
+	DECLARE _totalGoalsUsuLogged INTEGER DEFAULT 0;
+	DECLARE _totalGoalsUsuSearch INTEGER DEFAULT 0;
+	DECLARE _idUsuSearch INTEGER DEFAULT 0;
+	DECLARE _finished INTEGER DEFAULT 0;
+	DECLARE _idError INTEGER DEFAULT 0;
+	DECLARE _userIDHome INTEGER DEFAULT 0;
+	DECLARE _totalGoalsHome INTEGER DEFAULT 0;
+	DECLARE _totalGoalsAway INTEGER DEFAULT 0;
+	DECLARE _idCamp INTEGER DEFAULT 0;
+	DECLARE _dtMatch DATE DEFAULT NULL;
+	
+    SELECT ID_USUARIO into _idUsuSearch FROM TB_USUARIO WHERE PSN_ID = pPsnIDSearch;
+	
+	IF _idUsuSearch IS NULL OR _idUsuSearch = 0 THEN
+	
+		SET _idError = -1;
+	
+	ELSE
+    
+		begin
+		
+			DECLARE tabela_cursor CURSOR FOR
+				SELECT J.ID_Campeonato, J.DT_TABELA_INICIO_JOGO, J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, J.ID_USUARIO_TIME_CASA
+				FROM TB_TABELA_JOGO J, TB_CAMPEONATO C, TB_TIME T1 , TB_TIME T2 
+				WHERE (J.ID_USUARIO_TIME_CASA = pIdUsuLogged OR J.ID_USUARIO_TIME_CASA = _idUsuSearch)
+				  AND (J.ID_USUARIO_TIME_VISITANTE = pIdUsuLogged OR J.ID_USUARIO_TIME_VISITANTE = _idUsuSearch)
+				  AND J.QT_GOLS_TIME_CASA IS NOT NULL
+				  AND FIND_IN_SET(C.SG_TIPO_CAMPEONATO,fcGetAllSiglaByMode(pType))
+				  AND J.ID_CAMPEONATO = C.ID_CAMPEONATO AND J.ID_TIME_CASA = T1.ID_TIME
+				  AND J.ID_TIME_VISITANTE = T2.ID_TIME
+
+				UNION ALL
+
+				SELECT J.ID_Campeonato, J.DT_TABELA_INICIO_JOGO, J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, J.ID_USUARIO_TIME_CASA
+				FROM arena_clashes.TB_TABELA_JOGO J, arena_clashes.TB_CAMPEONATO C, arena_clashes.TB_TIME T1 , arena_clashes.TB_TIME T2 
+				WHERE (J.ID_USUARIO_TIME_CASA = pIdUsuLogged OR J.ID_USUARIO_TIME_CASA = _idUsuSearch)
+				  AND (J.ID_USUARIO_TIME_VISITANTE = pIdUsuLogged OR J.ID_USUARIO_TIME_VISITANTE = _idUsuSearch)
+				  AND J.QT_GOLS_TIME_CASA IS NOT NULL
+				  AND FIND_IN_SET(C.SG_TIPO_CAMPEONATO,fcGetAllSiglaByMode(pType))
+				  AND J.ID_CAMPEONATO = C.ID_CAMPEONATO AND J.ID_TIME_CASA = T1.ID_TIME
+				  AND J.ID_TIME_VISITANTE = T2.ID_TIME
+
+				  ORDER BY ID_Campeonato, DT_TABELA_INICIO_JOGO;
+				
+			DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
+			
+			OPEN tabela_cursor;
+			
+			get_tabela: LOOP
+			
+				FETCH tabela_cursor INTO _idCamp, _dtMatch, _totalGoalsHome, _totalGoalsAway, _userIDHome;
+				
+				IF _finished = 1 THEN
+					LEAVE get_tabela;
+				END IF;
+				
+				IF _totalGoalsHome = _totalGoalsAway THEN
+				
+					SET _totalDraw = _totalDraw + 1;
+					
+					SET _totalGoalsUsuLogged = _totalGoalsUsuLogged + _totalGoalsHome;
+					SET _totalGoalsUsuSearch = _totalGoalsUsuSearch + _totalGoalsHome;
+					
+				ELSEIF _userIDHome = pIdUsuLogged THEN
+					
+					SET _totalGoalsUsuLogged = _totalGoalsUsuLogged + _totalGoalsHome;
+					SET _totalGoalsUsuSearch = _totalGoalsUsuSearch + _totalGoalsAway;
+					
+					IF _totalGoalsHome > _totalGoalsAway THEN
+					
+						SET _totalWinUsuLogged = _totalWinUsuLogged + 1;
+					
+					ELSE
+					
+						SET _totalWinUsuSearch = _totalWinUsuSearch + 1;
+					
+					END IF;
+					
+
+				ELSEIF _userIDHome = _idUsuSearch THEN
+					
+					SET _totalGoalsUsuLogged = _totalGoalsUsuLogged + _totalGoalsAway;
+					SET _totalGoalsUsuSearch = _totalGoalsUsuSearch + _totalGoalsHome;
+					
+					IF _totalGoalsHome > _totalGoalsAway THEN
+					
+						SET _totalWinUsuSearch = _totalWinUsuSearch + 1;
+					
+					ELSE
+					
+						SET _totalWinUsuLogged = _totalWinUsuLogged + 1;
+					
+					END IF;
+					
+				END IF;
+				
+			END LOOP get_tabela;
+			
+			CLOSE tabela_cursor;
+				
+		end;
+	END IF;
+   
+	SELECT _totalWinUsuLogged as totalWinUsuLogged, _totalWinUsuSearch as totalWinUsuSearch, _totalDraw as totalDraw, _totalLossUsuLogged as totalLossUsuLogged, 
+	      _totalLossUsuSearch as totalLossUsuSearch, _totalGoalsUsuLogged as totalGoalsUsuLogged, _totalGoalsUsuSearch as totalGoalsUsuSearch, _idUsuSearch as idUsuSearch,
+		  _idError as errorID;
+	
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllClashesHistory` $$
+CREATE PROCEDURE `spGetAllClashesHistory`(pType VARCHAR(3), pIdUsuLogged INTEGER, pIdUsuSearch INTEGER)
+begin      
+	SELECT T.NM_TEMPORADA, C.ID_Campeonato, C.NM_Campeonato, TU1.NM_Usuario as NM1, TU1.PSN_ID as PSN1, TU2.NM_Usuario as NM2, TU2.PSN_ID as PSN2, 
+	      J.ID_TIME_CASA, J.ID_TIME_VISITANTE, T1.NM_TIME as 1T, T2.NM_TIME as 2T, J.ID_FASE, J.DT_TABELA_INICIO_JOGO, J.ID_TABELA_JOGO, 
+		  J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, F.NM_Fase, J.ID_USUARIO_TIME_CASA, J.ID_USUARIO_TIME_VISITANTE, J.IN_NUMERO_RODADA
+	FROM TB_TABELA_JOGO J, TB_TIME T1 , TB_TIME T2, TB_USUARIO TU1, TB_USUARIO TU2, TB_Temporada T, TB_Campeonato C, TB_Fase F 
+	WHERE (J.ID_USUARIO_TIME_CASA = pIdUsuLogged OR J.ID_USUARIO_TIME_CASA = pIdUsuSearch)
+	  AND (J.ID_USUARIO_TIME_VISITANTE = pIdUsuLogged OR J.ID_USUARIO_TIME_VISITANTE = pIdUsuSearch)
+	  AND J.QT_GOLS_TIME_CASA IS NOT NULL
+	  AND FIND_IN_SET(C.SG_TIPO_CAMPEONATO,fcGetAllSiglaByMode(pType))
+	  AND J.ID_CAMPEONATO = C.ID_CAMPEONATO AND J.ID_TIME_CASA = T1.ID_TIME
+	  AND J.ID_TIME_VISITANTE = T2.ID_TIME
+	  AND J.ID_USUARIO_TIME_CASA = TU1.ID_USUARIO
+	  AND J.ID_USUARIO_TIME_VISITANTE = TU2.ID_USUARIO
+	  AND J.ID_FASE = F.ID_FASE
+	  AND C.ID_TEMPORADA = T.ID_TEMPORADA
+
+	UNION ALL
+
+	SELECT T.NM_TEMPORADA, C.ID_Campeonato, C.NM_Campeonato, TU1.NM_Usuario as NM1, TU1.PSN_ID as PSN1, TU2.NM_Usuario as NM2, TU2.PSN_ID as PSN2, 
+	      J.ID_TIME_CASA, J.ID_TIME_VISITANTE, T1.NM_TIME as 1T, T2.NM_TIME as 2T, J.ID_FASE, J.DT_TABELA_INICIO_JOGO, J.ID_TABELA_JOGO, 
+		  J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, F.NM_Fase, J.ID_USUARIO_TIME_CASA, J.ID_USUARIO_TIME_VISITANTE, J.IN_NUMERO_RODADA
+	FROM arena_clashes.TB_TABELA_JOGO J, arena_clashes.TB_TIME T1 , arena_clashes.TB_TIME T2, arena_clashes.TB_USUARIO TU1, arena_clashes.TB_USUARIO TU2, 
+	     arena_clashes.TB_Temporada T, arena_clashes.TB_Campeonato C, TB_Fase F 
+	WHERE (J.ID_USUARIO_TIME_CASA = pIdUsuLogged OR J.ID_USUARIO_TIME_CASA = pIdUsuSearch)
+	  AND (J.ID_USUARIO_TIME_VISITANTE = pIdUsuLogged OR J.ID_USUARIO_TIME_VISITANTE = pIdUsuSearch)
+	  AND J.QT_GOLS_TIME_CASA IS NOT NULL
+	  AND FIND_IN_SET(C.SG_TIPO_CAMPEONATO,fcGetAllSiglaByMode(pType))
+	  AND J.ID_CAMPEONATO = C.ID_CAMPEONATO AND J.ID_TIME_CASA = T1.ID_TIME
+	  AND J.ID_TIME_VISITANTE = T2.ID_TIME
+	  AND J.ID_USUARIO_TIME_CASA = TU1.ID_USUARIO
+	  AND J.ID_USUARIO_TIME_VISITANTE = TU2.ID_USUARIO
+	  AND J.ID_FASE = F.ID_FASE
+	  AND C.ID_TEMPORADA = T.ID_TEMPORADA
+
+	  ORDER BY ID_Campeonato, ID_Fase, DT_TABELA_INICIO_JOGO;
+End$$
+DELIMITER ;

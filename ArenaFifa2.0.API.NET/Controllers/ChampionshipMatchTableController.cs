@@ -21,6 +21,8 @@ namespace ArenaFifa20.API.NET.Controllers
         {
 
             ChampionshipMatchTableListViewModel mainModel = new ChampionshipMatchTableListViewModel();
+            ChampionshipMatchTableClashesHistoryTotalswModel modelHistory = new ChampionshipMatchTableClashesHistoryTotalswModel();
+            ChampionshipMatchTableDetailsModel modelDetails = new ChampionshipMatchTableDetailsModel();
             db.openConnection();
             DataTable dt = null;
 
@@ -72,7 +74,6 @@ namespace ArenaFifa20.API.NET.Controllers
                 else if (model.actionUser.ToLower() == "show_historic_each_team")
                 {
 
-                    ChampionshipMatchTableDetailsModel modelDetails = new ChampionshipMatchTableDetailsModel();
                     List<ChampionshipMatchTableDetailsModel> listOfModel = new List<ChampionshipMatchTableDetailsModel>();
 
                     paramName = new string[] { "pIdCamp", "pIdTimeCasa", "pIdVisitante", "pTotalRegistroCada" };
@@ -106,11 +107,69 @@ namespace ArenaFifa20.API.NET.Controllers
                     else
                         mainModel.listOfMatch = new List<ChampionshipMatchTableDetailsModel>();
 
-                    modelDetails = null;
                     listOfModel = null;
 
                     mainModel.returnMessage = "ModeratorSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
+                }
+                else if (model.actionUser.ToLower() == "clashes_historic_by_coaches")
+                {
+                    paramName = new string[] { "pType", "pIdUsuLogged", "pPsnIDSearch" };
+                    paramValue = new string[] { model.modeType, model.userIDAction.ToString(), model.psnIDSearch };
+                    dt = db.executePROC("spGetTotalsClashesHistory", paramName, paramValue);
+                    if (dt.Rows.Count > 0)
+                    {
+                        if (dt.Rows[0]["errorID"].ToString() == "0")
+                        {
+                            modelHistory.userIDLogged = model.userIDAction;
+                            modelHistory.psnIDLogged = model.psnIDAction;
+                            modelHistory.userIDSearch = Convert.ToInt32(dt.Rows[0]["idUsuSearch"].ToString());
+                            modelHistory.psnIDSearch = model.psnIDSearch;
+                            modelHistory.totalWinUsuLogged = Convert.ToInt16(dt.Rows[0]["totalWinUsuLogged"].ToString());
+                            modelHistory.totalWinUsuSearch = Convert.ToInt16(dt.Rows[0]["totalWinUsuSearch"].ToString());
+                            modelHistory.totalDraw = Convert.ToInt16(dt.Rows[0]["totalDraw"].ToString());
+                            modelHistory.totalLossUsuLogged = Convert.ToInt16(dt.Rows[0]["totalLossUsuLogged"].ToString());
+                            modelHistory.totalLossUsuSearch = Convert.ToInt16(dt.Rows[0]["totalLossUsuSearch"].ToString());
+                            modelHistory.totalGoalsUsuLogged = Convert.ToInt16(dt.Rows[0]["totalGoalsUsuLogged"].ToString());
+                            modelHistory.totalGoalsUsuSearch = Convert.ToInt16(dt.Rows[0]["totalGoalsUsuSearch"].ToString());
+
+                            modelHistory.returnMessage = "ModeratorSuccessfully";
+
+                            modelHistory.listOfMatchDraw = new List<ChampionshipMatchTableDetailsModel>();
+                            modelHistory.listOfMatchWinUsuLogged = new List<ChampionshipMatchTableDetailsModel>();
+                            modelHistory.listOfMatchWinUsuSearch = new List<ChampionshipMatchTableDetailsModel>();
+
+                            paramName = new string[] { "pType", "pIdUsuLogged", "pIdUsuSearch" };
+                            paramValue = new string[] { model.modeType, modelHistory.userIDLogged.ToString(), modelHistory.userIDSearch.ToString() };
+                            dt = db.executePROC("spGetAllClashesHistory", paramName, paramValue);
+                            for (var i = 0; i < dt.Rows.Count; i++)
+                            {
+                                modelDetails = GlobalFunctions.setDetailsChampionshipMatchTable(dt.Rows[i]);
+
+                                if (modelDetails.totalGoalsHome == modelDetails.totalGoalsAway)
+                                    modelHistory.listOfMatchDraw.Add(modelDetails);
+                                else if (Convert.ToInt16(modelDetails.totalGoalsHome) > Convert.ToInt16(modelDetails.totalGoalsAway) && modelDetails.userHomeID == modelHistory.userIDLogged)
+                                    modelHistory.listOfMatchWinUsuLogged.Add(modelDetails);
+                                else if (Convert.ToInt16(modelDetails.totalGoalsHome) > Convert.ToInt16(modelDetails.totalGoalsAway) && modelDetails.userHomeID == modelHistory.userIDSearch)
+                                    modelHistory.listOfMatchWinUsuSearch.Add(modelDetails);
+                                else if (Convert.ToInt16(modelDetails.totalGoalsHome) < Convert.ToInt16(modelDetails.totalGoalsAway) && modelDetails.userAwayID == modelHistory.userIDLogged)
+                                    modelHistory.listOfMatchWinUsuLogged.Add(modelDetails);
+                                else if (Convert.ToInt16(modelDetails.totalGoalsHome) < Convert.ToInt16(modelDetails.totalGoalsAway) && modelDetails.userAwayID == modelHistory.userIDSearch)
+                                    modelHistory.listOfMatchWinUsuSearch.Add(modelDetails);
+
+                            }
+                        }
+                        else
+                            modelHistory.returnMessage = "PsnIDSearchNotFound";
+
+
+                    }
+                    else
+                    {
+                        modelHistory.returnMessage = "ErrorExecuteProcedure";
+                    }
+
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelHistory);
 
                 }
                 else
@@ -129,6 +188,8 @@ namespace ArenaFifa20.API.NET.Controllers
                 db.closeConnection();
                 dt = null;
                 mainModel = null;
+                modelDetails = null;
+                modelHistory = null;
             }
 
 
@@ -158,37 +219,40 @@ namespace ArenaFifa20.API.NET.Controllers
                     dt = db.executePROC("spGetTabelaJogoAllDetailsOfCampeonato", paramName, paramValue);
                     for (var i = 0; i < dt.Rows.Count; i++)
                     {
-                        modelDetails = new ChampionshipMatchTableDetailsModel();
-                        modelDetails.matchID = Convert.ToInt16(dt.Rows[i]["ID_TABELA_JOGO"].ToString());
-                        modelDetails.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
-                        modelDetails.championshipName = dt.Rows[i]["NM_CAMPEONATO"].ToString();
-                        modelDetails.stageID = Convert.ToInt16(dt.Rows[i]["ID_FASE"].ToString());
-                        modelDetails.stageName = dt.Rows[i]["NM_FASE"].ToString();
-                        modelDetails.groupID = Convert.ToInt16(dt.Rows[i]["ID_Grupo"].ToString());
-                        if (!String.IsNullOrEmpty(dt.Rows[i]["NM_Grupo"].ToString()))
-                            modelDetails.groupName = dt.Rows[i]["NM_Grupo"].ToString();
-                        modelDetails.seasonName = dt.Rows[i]["NM_TEMPORADA"].ToString();
-                        modelDetails.startDate = Convert.ToDateTime(dt.Rows[i]["DT_TABELA_INICIO_JOGO"].ToString());
-                        modelDetails.endDate = Convert.ToDateTime(dt.Rows[i]["DT_TABELA_FIM_JOGO"].ToString());
-                        modelDetails.teamHomeID = Convert.ToInt16(dt.Rows[i]["ID_TIME_CASA"].ToString());
-                        modelDetails.totalGoalsHome = dt.Rows[i]["QT_GOLS_TIME_CASA"].ToString();
-                        modelDetails.teamAwayID = Convert.ToInt16(dt.Rows[i]["ID_TIME_VISITANTE"].ToString());
-                        modelDetails.totalGoalsAway = dt.Rows[i]["QT_GOLS_TIME_VISITANTE"].ToString();
-                        if (!String.IsNullOrEmpty(dt.Rows[i]["DT_EFETIVACAO_JOGO"].ToString()))
-                            modelDetails.launchDate = Convert.ToDateTime(dt.Rows[i]["DT_EFETIVACAO_JOGO"].ToString());
-                        modelDetails.round = Convert.ToInt16(dt.Rows[i]["IN_NUMERO_RODADA"].ToString());
-                        if (!String.IsNullOrEmpty(dt.Rows[i]["IN_JOGO_MATAXMATA"].ToString()))
-                            modelDetails.playoffGame = Convert.ToInt16(dt.Rows[i]["IN_JOGO_MATAXMATA"].ToString());
-                        modelDetails.teamURLHome = dt.Rows[i]["DS_URL1"].ToString();
-                        modelDetails.teamNameHome = dt.Rows[i]["1T"].ToString();
-                        modelDetails.teamTypeHome = dt.Rows[i]["DT1"].ToString();
-                        modelDetails.userHomeName = dt.Rows[i]["NM_Tecnico_TimeCasa"].ToString();
-                        modelDetails.psnIDHome = dt.Rows[i]["PSN1"].ToString();
-                        modelDetails.teamURLAway = dt.Rows[i]["DS_URL2"].ToString();
-                        modelDetails.teamNameAway = dt.Rows[i]["2T"].ToString();
-                        modelDetails.teamTypeAway = dt.Rows[i]["DT2"].ToString();
-                        modelDetails.userAwayName = dt.Rows[i]["NM_Tecnico_TimeVisitante"].ToString();
-                        modelDetails.psnIDAway = dt.Rows[i]["PSN2"].ToString();
+
+                        modelDetails = GlobalFunctions.setDetailsChampionshipMatchTable(dt.Rows[i]);
+
+                        //modelDetails = new ChampionshipMatchTableDetailsModel();
+                        //modelDetails.matchID = Convert.ToInt16(dt.Rows[i]["ID_TABELA_JOGO"].ToString());
+                        //modelDetails.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
+                        //modelDetails.championshipName = dt.Rows[i]["NM_CAMPEONATO"].ToString();
+                        //modelDetails.stageID = Convert.ToInt16(dt.Rows[i]["ID_FASE"].ToString());
+                        //modelDetails.stageName = dt.Rows[i]["NM_FASE"].ToString();
+                        //modelDetails.groupID = Convert.ToInt16(dt.Rows[i]["ID_Grupo"].ToString());
+                        //if (!String.IsNullOrEmpty(dt.Rows[i]["NM_Grupo"].ToString()))
+                        //    modelDetails.groupName = dt.Rows[i]["NM_Grupo"].ToString();
+                        //modelDetails.seasonName = dt.Rows[i]["NM_TEMPORADA"].ToString();
+                        //modelDetails.startDate = Convert.ToDateTime(dt.Rows[i]["DT_TABELA_INICIO_JOGO"].ToString());
+                        //modelDetails.endDate = Convert.ToDateTime(dt.Rows[i]["DT_TABELA_FIM_JOGO"].ToString());
+                        //modelDetails.teamHomeID = Convert.ToInt16(dt.Rows[i]["ID_TIME_CASA"].ToString());
+                        //modelDetails.totalGoalsHome = dt.Rows[i]["QT_GOLS_TIME_CASA"].ToString();
+                        //modelDetails.teamAwayID = Convert.ToInt16(dt.Rows[i]["ID_TIME_VISITANTE"].ToString());
+                        //modelDetails.totalGoalsAway = dt.Rows[i]["QT_GOLS_TIME_VISITANTE"].ToString();
+                        //if (!String.IsNullOrEmpty(dt.Rows[i]["DT_EFETIVACAO_JOGO"].ToString()))
+                        //    modelDetails.launchDate = Convert.ToDateTime(dt.Rows[i]["DT_EFETIVACAO_JOGO"].ToString());
+                        //modelDetails.round = Convert.ToInt16(dt.Rows[i]["IN_NUMERO_RODADA"].ToString());
+                        //if (!String.IsNullOrEmpty(dt.Rows[i]["IN_JOGO_MATAXMATA"].ToString()))
+                        //    modelDetails.playoffGame = Convert.ToInt16(dt.Rows[i]["IN_JOGO_MATAXMATA"].ToString());
+                        //modelDetails.teamURLHome = dt.Rows[i]["DS_URL1"].ToString();
+                        //modelDetails.teamNameHome = dt.Rows[i]["1T"].ToString();
+                        //modelDetails.teamTypeHome = dt.Rows[i]["DT1"].ToString();
+                        //modelDetails.userHomeName = dt.Rows[i]["NM_Tecnico_TimeCasa"].ToString();
+                        //modelDetails.psnIDHome = dt.Rows[i]["PSN1"].ToString();
+                        //modelDetails.teamURLAway = dt.Rows[i]["DS_URL2"].ToString();
+                        //modelDetails.teamNameAway = dt.Rows[i]["2T"].ToString();
+                        //modelDetails.teamTypeAway = dt.Rows[i]["DT2"].ToString();
+                        //modelDetails.userAwayName = dt.Rows[i]["NM_Tecnico_TimeVisitante"].ToString();
+                        //modelDetails.psnIDAway = dt.Rows[i]["PSN2"].ToString();
 
                         if (!String.IsNullOrEmpty(dt.Rows[i]["IN_BLACK_LIST"].ToString()))
                             modelDetails.typeBlackList = dt.Rows[i]["IN_BLACK_LIST"].ToString();
