@@ -400,15 +400,48 @@ namespace ArenaFifa20.API.NET
                 modelDetails.teamURLHome = rowMatchTable["DS_URL1"].ToString();
                 modelDetails.teamNameHome = rowMatchTable["1T"].ToString();
                 modelDetails.teamTypeHome = rowMatchTable["DT1"].ToString();
-                modelDetails.userHomeName = rowMatchTable["NM_Tecnico_TimeCasa"].ToString();
-                modelDetails.userHomeID = Convert.ToInt32(rowMatchTable["ID_USUARIO_TIME_CASA"].ToString());
-                modelDetails.psnIDHome = rowMatchTable["PSN1"].ToString();
+                if (!String.IsNullOrEmpty(rowMatchTable["ID_USUARIO_TIME_CASA"].ToString()))
+                {
+                    modelDetails.userHomeID = Convert.ToInt32(rowMatchTable["ID_USUARIO_TIME_CASA"].ToString());
+                    modelDetails.psnIDHome = rowMatchTable["NM_Tecnico_TimeCasa"].ToString();
+                    modelDetails.userHomeName = rowMatchTable["NM_Tecnico_TimeCasa"].ToString();
+                    if (String.IsNullOrEmpty(modelDetails.psnIDHome))
+                    {
+                        modelDetails.psnIDHome = rowMatchTable["PSN1"].ToString();
+                        modelDetails.userHomeName = rowMatchTable["PSN1"].ToString();
+                    }
+                }
+                else
+                {
+                    modelDetails.userHomeID = Convert.ToInt32(rowMatchTable["IDUSU1"].ToString());
+                    modelDetails.psnIDHome = rowMatchTable["PSN1"].ToString();
+                    modelDetails.userHomeName = rowMatchTable["PSN1"].ToString();
+                }
                 modelDetails.teamURLAway = rowMatchTable["DS_URL2"].ToString();
                 modelDetails.teamNameAway = rowMatchTable["2T"].ToString();
                 modelDetails.teamTypeAway = rowMatchTable["DT2"].ToString();
-                modelDetails.userAwayName = rowMatchTable["NM_Tecnico_TimeVisitante"].ToString();
-                modelDetails.userAwayID = Convert.ToInt32(rowMatchTable["ID_USUARIO_TIME_VISITANTE"].ToString());
-                modelDetails.psnIDAway = rowMatchTable["PSN2"].ToString();
+
+                if (!String.IsNullOrEmpty(rowMatchTable["ID_USUARIO_TIME_VISITANTE"].ToString()))
+                {
+                    modelDetails.userAwayID = Convert.ToInt32(rowMatchTable["ID_USUARIO_TIME_VISITANTE"].ToString());
+                    modelDetails.psnIDAway = rowMatchTable["NM_Tecnico_TimeVisitante"].ToString();
+                    modelDetails.userAwayName = rowMatchTable["NM_Tecnico_TimeVisitante"].ToString();
+                    if (String.IsNullOrEmpty(modelDetails.psnIDAway))
+                    {
+                        modelDetails.psnIDAway = rowMatchTable["PSN2"].ToString();
+                        modelDetails.userAwayName = rowMatchTable["PSN2"].ToString();
+                    }
+                }
+                else
+                {
+                    modelDetails.userAwayID = Convert.ToInt32(rowMatchTable["IDUSU2"].ToString());
+                    modelDetails.psnIDAway = rowMatchTable["PSN2"].ToString();
+                    modelDetails.userAwayName = rowMatchTable["PSN2"].ToString();
+                }
+                if (DateTime.Now.Date >= modelDetails.startDate)
+                    modelDetails.launchResultReleased = true;
+                else
+                    modelDetails.launchResultReleased = false;
 
                 return modelDetails;
             }

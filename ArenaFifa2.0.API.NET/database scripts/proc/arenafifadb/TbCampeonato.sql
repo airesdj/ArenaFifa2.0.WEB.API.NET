@@ -508,3 +508,6 @@ begin
    AND X2.ID_FASE = F2.ID_FASE;
 End$$
 DELIMITER ;
+
+
+

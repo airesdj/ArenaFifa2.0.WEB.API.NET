@@ -10,6 +10,7 @@ namespace ArenaFifa20.API.NET.Models
         public class ChampionshipMatchTableListViewModel
         {
             public List<ChampionshipMatchTableDetailsModel> listOfMatch { get; set; }
+            public List<ChampionshipMatchTableClashesByTeamModel> listOfClashes { get; set; }
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
@@ -55,6 +56,7 @@ namespace ArenaFifa20.API.NET.Models
             public string messageBlackList { get; set; }
             public string typeBlackList { get; set; }
             public int totalRecordsOfHistoric { get; set; }
+            public Boolean launchResultReleased { get; set; }
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
@@ -79,6 +81,55 @@ namespace ArenaFifa20.API.NET.Models
             public string returnMessage { get; set; }
         }
 
+
+        public class ChampionshipMatchTableClashesHistoryTotalsByTeamswModel
+        {
+            public int teamIDHome { get; set; }
+            public string teamNameHome { get; set; }
+            public int teamIDAway { get; set; }
+            public string teamNameAway { get; set; }
+            public int totalWinTeamHome { get; set; }
+            public int totalWinTeamAway { get; set; }
+            public int totalDraw { get; set; }
+            public int totalLossTeamHome { get; set; }
+            public int totalLossTeamAway { get; set; }
+            public int totalGoalsTeamHome { get; set; }
+            public int totalGoalsTeamAway { get; set; }
+            public List<ChampionshipMatchTableDetailsModel> listOfMatchWinTeamHome { get; set; }
+            public List<ChampionshipMatchTableDetailsModel> listOfMatchDraw { get; set; }
+            public List<ChampionshipMatchTableDetailsModel> listOfMatchWinTeamAway { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
+        }
+
+
+        public class ChampionshipMatchTableClashesByTeamModel
+        {
+            public int userID { get; set; }
+            public int championshipID { get; set; }
+            public int teamID { get; set; }
+            public string teamName { get; set; }
+            public int nextMatchTeamID { get; set; }
+            public string nextMatchTeamName { get; set; }
+            public string descriptionNextMatch { get; set; }
+            public string descriptionPreviousMatch1_1 { get; set; }
+            public string descriptionPreviousMatch1_2 { get; set; }
+            public string descriptionPreviousMatch1_3 { get; set; }
+            public string descriptionPreviousMatch1_4 { get; set; }
+            public string statusPreviousMatch1 { get; set; }
+            public string descriptionPreviousMatch2_1 { get; set; }
+            public string descriptionPreviousMatch2_2 { get; set; }
+            public string descriptionPreviousMatch2_3 { get; set; }
+            public string descriptionPreviousMatch2_4 { get; set; }
+            public string statusPreviousMatch2 { get; set; }
+            public string descriptionPreviousMatch3_1 { get; set; }
+            public string descriptionPreviousMatch3_2 { get; set; }
+            public string descriptionPreviousMatch3_3 { get; set; }
+            public string descriptionPreviousMatch3_4 { get; set; }
+            public string statusPreviousMatch3 { get; set; }
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
+        }
 
     }
 }
