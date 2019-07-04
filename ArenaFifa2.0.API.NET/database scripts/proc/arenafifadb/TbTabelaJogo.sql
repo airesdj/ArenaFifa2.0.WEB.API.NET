@@ -26,6 +26,7 @@ End$$
 DELIMITER ;
 
 
+
 DELIMITER $$
 DROP FUNCTION IF EXISTS `fcGetCurrentStageRoundByCampeonato` $$
 CREATE FUNCTION `fcGetCurrentStageRoundByCampeonato`(pIdCamp INTEGER) RETURNS VARCHAR(20)

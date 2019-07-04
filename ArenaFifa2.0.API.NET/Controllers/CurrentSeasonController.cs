@@ -84,9 +84,9 @@ namespace ArenaFifa20.API.NET.Controllers
                     model.menuCurrentSeason = getDetailsMenu(CurrentSeasonModel.modeType, model.userID, model.championshipID, db);
 
                     model.menuCurrentSeason.listOActiveChampionship = GlobalFunctions.getAllActiveChampionshipCurrentSeason(db,
-                                                                      model.menuCurrentSeason.currentChampionshipID, model.modeType);
+                                                                      model.championshipID, model.modeType);
 
-                    model.menuCurrentSeason.currentChampionshipDetails = GlobalFunctions.getChampionshipDetails(db, model.menuCurrentSeason.currentChampionshipID);
+                    model.menuCurrentSeason.currentChampionshipDetails = GlobalFunctions.getChampionshipDetails(db, model.championshipID);
 
                     model.returnMessage = "CurrentSeasonSuccessfully";
 
