@@ -38,6 +38,7 @@ namespace ArenaFifa20.API.NET.Controllers
                 CurrentSeasonModel.userID = model.userID;
                 CurrentSeasonModel.modeType = model.modeType;
                 CurrentSeasonModel.actionUser = model.actionUser;
+                CurrentSeasonModel.championshipID = model.championshipID;
 
                 if (model.actionUser == "summary")
                 {
@@ -78,13 +79,26 @@ namespace ArenaFifa20.API.NET.Controllers
 
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, CurrentSeasonModel);
                 }
-                if (model.actionUser == "just_menu")
+                else if (model.actionUser == "summary_update_team")
+                {
+                    model.menuCurrentSeason = getDetailsMenu(CurrentSeasonModel.modeType, model.userID, model.championshipID, db);
+
+                    model.menuCurrentSeason.listOActiveChampionship = GlobalFunctions.getAllActiveChampionshipCurrentSeason(db,
+                                                                      model.menuCurrentSeason.currentChampionshipID, model.modeType);
+
+                    model.menuCurrentSeason.currentChampionshipDetails = GlobalFunctions.getChampionshipDetails(db, model.menuCurrentSeason.currentChampionshipID);
+
+                    model.returnMessage = "CurrentSeasonSuccessfully";
+
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser == "just_menu")
                 {
                     MenuModel = getDetailsMenu(CurrentSeasonModel.modeType, CurrentSeasonModel.userID, 0, db);
 
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, MenuModel);
                 }
-                if (model.actionUser == "getAllForecastSecondStage")
+                else if (model.actionUser == "getAllForecastSecondStage")
                 {
                     CurrentSeasonModel.listOfForecastTeamQualified = new List<ChampionshipTeamTableDetailsModel>();
                     CurrentSeasonModel.listOfForecastTeamQualifiedThirdPlace = new List<ChampionshipTeamTableDetailsModel>();

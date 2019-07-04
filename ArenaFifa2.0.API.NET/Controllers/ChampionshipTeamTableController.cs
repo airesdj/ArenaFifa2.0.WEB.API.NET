@@ -49,7 +49,10 @@ namespace ArenaFifa20.API.NET.Controllers
                     modelDetails.totalGoalsAGainst = Convert.ToInt16(dt.Rows[i]["QT_GOLS_CONTRA"].ToString());
                     if (!String.IsNullOrEmpty(dt.Rows[i]["IN_ORDENACAO_GRUPO"].ToString()))
                         modelDetails.orden = Convert.ToInt16(dt.Rows[i]["IN_ORDENACAO_GRUPO"].ToString());
-                    modelDetails.teamName = dt.Rows[i]["NM_TIME"].ToString();
+                    if (dt.Rows[i]["DS_TIPO"].ToString().IndexOf("PRO") > -1 || dt.Rows[i]["DS_TIPO"].ToString().IndexOf("FUT") > -1)
+                        modelDetails.teamName = GlobalFunctions.UppercaseFirstWords(dt.Rows[i]["NM_TIME"].ToString());
+                    else
+                        modelDetails.teamName = dt.Rows[i]["NM_TIME"].ToString();
                     modelDetails.teamType = dt.Rows[i]["DS_TIPO"].ToString();
                     modelDetails.teamURL = dt.Rows[i]["DS_URL_TIME"].ToString();
                     modelDetails.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());

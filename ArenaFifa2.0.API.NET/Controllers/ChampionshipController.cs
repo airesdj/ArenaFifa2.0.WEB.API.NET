@@ -350,9 +350,9 @@ namespace ArenaFifa20.API.NET.Controllers
                                 {
                                     Array.Resize(ref teamsQualified, teamsQualified.Length + 1);
                                     if (dt.Rows[i]["NM_TIME"].ToString().Length > 20)
-                                        teamsQualified[i] = GlobalFunctions.UppercaseWords(dt.Rows[i]["NM_TIME"].ToString().ToLower().Substring(0,19));
+                                        teamsQualified[i] = GlobalFunctions.UppercaseFirstWords(dt.Rows[i]["NM_TIME"].ToString().ToLower().Substring(0,19));
                                     else
-                                        teamsQualified[i] = GlobalFunctions.UppercaseWords(dt.Rows[i]["NM_TIME"].ToString().ToLower());
+                                        teamsQualified[i] = GlobalFunctions.UppercaseFirstWords(dt.Rows[i]["NM_TIME"].ToString().ToLower());
 
                                 }
                             }
@@ -554,17 +554,17 @@ namespace ArenaFifa20.API.NET.Controllers
 
                                     Array.Resize(ref teamsQualified, teamsQualified.Length + 1);
                                     if (dt.Rows[j]["1T"].ToString().Length > 20)
-                                        teamsQualified[countArray] = GlobalFunctions.UppercaseWords(dt.Rows[j]["1T"].ToString().ToLower().Substring(0, 19));
+                                        teamsQualified[countArray] = GlobalFunctions.UppercaseFirstWords(dt.Rows[j]["1T"].ToString().ToLower().Substring(0, 19));
                                     else
-                                        teamsQualified[countArray] = GlobalFunctions.UppercaseWords(dt.Rows[j]["1T"].ToString().ToLower());
+                                        teamsQualified[countArray] = GlobalFunctions.UppercaseFirstWords(dt.Rows[j]["1T"].ToString().ToLower());
 
                                     countArray = countArray + 1;
 
                                     Array.Resize(ref teamsQualified, teamsQualified.Length + 1);
                                     if (dt.Rows[i]["1T"].ToString().Length > 20)
-                                        teamsQualified[countArray] = GlobalFunctions.UppercaseWords(dt.Rows[j]["1T"].ToString().ToLower().Substring(0, 19));
+                                        teamsQualified[countArray] = GlobalFunctions.UppercaseFirstWords(dt.Rows[j]["1T"].ToString().ToLower().Substring(0, 19));
                                     else
-                                        teamsQualified[countArray] = GlobalFunctions.UppercaseWords(dt.Rows[j]["1T"].ToString().ToLower());
+                                        teamsQualified[countArray] = GlobalFunctions.UppercaseFirstWords(dt.Rows[j]["1T"].ToString().ToLower());
                                 }
 
                                 if (stageIDs[i] == GlobalVariables.STAGE_SECOND_STAGE)

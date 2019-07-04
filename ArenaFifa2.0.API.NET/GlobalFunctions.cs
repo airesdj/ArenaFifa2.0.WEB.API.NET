@@ -456,9 +456,11 @@ namespace ArenaFifa20.API.NET
         }
 
 
-        public static string UppercaseWords(string value)
+        public static string UppercaseFirstWords(string value)
         {
+            value = value.Trim();
             char[] array = value.ToCharArray();
+            int iStart = 1;
             // Handle the first letter in the string.
             if (array.Length >= 1)
             {
@@ -466,17 +468,32 @@ namespace ArenaFifa20.API.NET
                 {
                     array[0] = char.ToUpper(array[0]);
                 }
+
+                if (array[2] == ' ')
+                {
+                    array[1] = char.ToUpper(array[1]);
+                    iStart = 3;
+                }
             }
             // Scan through the letters, checking for spaces.
             // ... Uppercase the lowercase letters following spaces.
-            for (int i = 1; i < array.Length; i++)
+            for (int i = iStart; i < array.Length; i++)
             {
-                if (array[i - 1] == ' ')
+                if (array[i - 1] == ' ' || array[i - 1] == '-')
                 {
                     if (char.IsLower(array[i]))
                     {
                         array[i] = char.ToUpper(array[i]);
                     }
+                    else if (array[i - 1] == ' ' && ((array.Length - i)==2)) { 
+                        array[i] = char.ToUpper(array[i]);
+                        array[i + 1] = char.ToUpper(array[i + 1]);
+                        i = i + 2;
+                    }
+                }
+                else if (!char.IsLower(array[i]))
+                {
+                    array[i] = char.ToLower(array[i]);
                 }
             }
             return new string(array);
