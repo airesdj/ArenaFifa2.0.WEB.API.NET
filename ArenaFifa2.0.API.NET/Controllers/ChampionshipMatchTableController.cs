@@ -131,6 +131,8 @@ namespace ArenaFifa20.API.NET.Controllers
                             modelClashDetails.championshipID = model.championshipID;
                             modelClashDetails.teamID = Convert.ToInt32(dt.Rows[i]["ID_TIME"].ToString());
                             modelClashDetails.teamName = dt.Rows[i]["NM_TIME"].ToString();
+                            modelClashDetails.nextMatchID = Convert.ToInt32(dt.Rows[i]["ID_TABELA_JOGO_NEXT_MATCH"].ToString());
+
                             _teamID = modelClashDetails.teamID;
                         }
                         //modelClashDetails = new ChampionshipMatchTableClashesByTeamModel();
@@ -147,6 +149,7 @@ namespace ArenaFifa20.API.NET.Controllers
                             modelClashDetails.descriptionPreviousMatch1_3 = dt.Rows[i]["DS_MATCTH_3"].ToString();
                             modelClashDetails.descriptionPreviousMatch1_4 = dt.Rows[i]["DS_MATCTH_4"].ToString();
                             modelClashDetails.statusPreviousMatch1 = dt.Rows[i]["STATUS_MATCTH"].ToString();
+                            modelClashDetails.prevMatchID1 = Convert.ToInt32(dt.Rows[i]["ID_TABELA_JOGO_PREV_MATCH"].ToString());
                         }
                         else if (dt.Rows[i]["ID_ROUND"].ToString() == "2")
                         {
@@ -155,6 +158,7 @@ namespace ArenaFifa20.API.NET.Controllers
                             modelClashDetails.descriptionPreviousMatch2_3 = dt.Rows[i]["DS_MATCTH_3"].ToString();
                             modelClashDetails.descriptionPreviousMatch2_4 = dt.Rows[i]["DS_MATCTH_4"].ToString();
                             modelClashDetails.statusPreviousMatch2 = dt.Rows[i]["STATUS_MATCTH"].ToString();
+                            modelClashDetails.prevMatchID2 = Convert.ToInt32(dt.Rows[i]["ID_TABELA_JOGO_PREV_MATCH"].ToString());
                         }
                         else if (dt.Rows[i]["ID_ROUND"].ToString() == "3")
                         {
@@ -163,6 +167,7 @@ namespace ArenaFifa20.API.NET.Controllers
                             modelClashDetails.descriptionPreviousMatch3_3 = dt.Rows[i]["DS_MATCTH_3"].ToString();
                             modelClashDetails.descriptionPreviousMatch3_4 = dt.Rows[i]["DS_MATCTH_4"].ToString();
                             modelClashDetails.statusPreviousMatch3 = dt.Rows[i]["STATUS_MATCTH"].ToString();
+                            modelClashDetails.prevMatchID3 = Convert.ToInt32(dt.Rows[i]["ID_TABELA_JOGO_PREV_MATCH"].ToString());
                         }
                         //listOfModel.Add(modelClashDetails);
                     }
