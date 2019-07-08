@@ -15,6 +15,8 @@ namespace ArenaFifa20.API.NET
         public static string STAGE_QUARTER_FINAL = "3";
         public static string STAGE_SEMI_FINAL = "4";
         public static string STAGE_FINAL = "5";
+
+        public static string DATABASE_NAME_ONLINE = "Connection.Database.Online";
     }
 
 }

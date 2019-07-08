@@ -21,7 +21,7 @@ namespace ArenaFifa20.API.NET.Controllers
         {
 
 
-            db.openConnection();
+            db.openConnection(model.dataBaseName = null ?? GlobalVariables.DATABASE_NAME_ONLINE);
             DataTable dt = null;
             string returnMessage = String.Empty;
 
@@ -67,7 +67,6 @@ namespace ArenaFifa20.API.NET.Controllers
 
                     try
                     {
-
                         for (var i = 0; i < dt.Rows.Count; i++)
                         {
                             championshipType = new ChampionshipTypeModel();

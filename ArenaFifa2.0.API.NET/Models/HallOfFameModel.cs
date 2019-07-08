@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Web;
 using static ArenaFifa20.API.NET.Models.MyMatchesModel;
@@ -36,6 +37,7 @@ namespace ArenaFifa20.API.NET.Models
             public string championshipIDRenewalWorldCupUefaEuro { get; set; }
             public int totalLimitBlackList { get; set; }
             public int totalLimitBanWorldCupUefaEuro { get; set; }
+            public string dataBaseName { get; set; }
 
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
@@ -106,6 +108,8 @@ namespace ArenaFifa20.API.NET.Models
             public string championshipIDRenewalWorldCupUefaEuro { get; set; }
             public int totalApprovedRenewal { get; set; }
             public int totalUnderAnalysisRenewal { get; set; }
+            public string dataBaseName { get; set; }
+
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }
@@ -126,6 +130,10 @@ namespace ArenaFifa20.API.NET.Models
             public int blackListtotal { get; set; }
             public string acceptedRenewal { get; set; }
             public string actionRenewal { get; set; }
+            public string dataBaseName { get; set; }
+
+            public string actionUser { get; set; }
+            public string returnMessage { get; set; }
         }
 
         public class RenewalPROCLUBSquadViewModel
@@ -138,6 +146,8 @@ namespace ArenaFifa20.API.NET.Models
             public string clubName { get; set; }
             public string mobileNumber { get; set; }
             public string codeMobileNumber { get; set; }
+            public string dataBaseName { get; set; }
+
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }

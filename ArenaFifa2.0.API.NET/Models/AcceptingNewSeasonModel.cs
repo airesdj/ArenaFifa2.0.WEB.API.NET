@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Web;
 
@@ -16,9 +17,8 @@ namespace ArenaFifa20.API.NET.Models
             public string confirmation { get; set; }
             public string teamName { get; set; }
             public string ordering { get; set; }
-
+            public string dataBaseName { get; set; }
             public List<AcceptingDetails> listOfAccepting { get; set; }
-
             public string actionUser { get; set; }
             public string returnMessage { get; set; }
         }

@@ -20,8 +20,7 @@ namespace ArenaFifa20.API.NET.Controllers
         [HttpPost]
         public IHttpActionResult postAccepting(AcceptingNewSeasonViewModel model)
         {
-
-            db.openConnection();
+            db.openConnection(model.dataBaseName = null ?? GlobalVariables.DATABASE_NAME_ONLINE);
             var objFunctions = new Commons.functions();
             AcceptingNewSeasonViewModel mainModel = new AcceptingNewSeasonViewModel();
             DataTable dt = null;
@@ -34,6 +33,18 @@ namespace ArenaFifa20.API.NET.Controllers
                     paramValue = new string[] { Convert.ToString(model.seasonID), Convert.ToString(model.championshipID), Convert.ToString(model.userID), model.confirmation, model.ordering, model.teamName };
                     dt = db.executePROC("spAddUpdateConfirmacaoTemporada", paramName, paramValue);
 
+                    model.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser == "getAllAccepting-staging")
+                {
+                    model.listOfAccepting = getAllAccepting(db);
+                    model.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser == "getAccepting-staging")
+                {
+                    model.listOfAccepting = getAllAccepting(db);
                     model.returnMessage = "ModeratorSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
@@ -58,15 +69,110 @@ namespace ArenaFifa20.API.NET.Controllers
         }
 
         [HttpGet]
-        public IHttpActionResult GetAllAccepting()
+        public IHttpActionResult GetAll()
+        {
+            AcceptingNewSeasonViewModel mainModel = new AcceptingNewSeasonViewModel();
+            db.openConnection();
+
+            try
+            {
+                mainModel.listOfAccepting = getAllAccepting(db);
+                mainModel.returnMessage = "ModeratorSuccessfully";
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
+            }
+            catch (Exception ex)
+            {
+                mainModel.listOfAccepting = new List<AcceptingDetails>();
+                mainModel.returnMessage = "errorGetAllAccepting_" + ex.Message;
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
+            }
+            finally
+            {
+                db.closeConnection();
+                mainModel = null;
+            }
+        }
+
+
+        [HttpGet]
+        public IHttpActionResult GetDetails(string id)
         {
 
-            AcceptingNewSeasonViewModel mainModel = new AcceptingNewSeasonViewModel();
             AcceptingDetails modelDetails = new AcceptingDetails();
-            List<AcceptingDetails> listOfModel = new List<AcceptingDetails>();
             DataTable dt = null;
             db.openConnection();
 
+
+            try
+            {
+                string[] arrayPK = id.Split(Convert.ToChar(";"));
+
+                modelDetails.seasonID = Convert.ToInt16(arrayPK[0]);
+                modelDetails.userID = Convert.ToUInt16(arrayPK[1]);
+                modelDetails.championshipID = Convert.ToInt16(arrayPK[2]);
+
+                modelDetails = GetAccepting(db, modelDetails.seasonID, modelDetails.userID, modelDetails.championshipID);
+                modelDetails.returnMessage = "ModeratorSuccessfully";
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, modelDetails);
+            }
+            catch (Exception ex)
+            {
+                modelDetails.returnMessage = "errorGetAccepting_" + ex.Message;
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, modelDetails);
+            }
+            finally
+            {
+                db.closeConnection();
+                modelDetails = null;
+                dt = null;
+            }
+        }
+
+        private AcceptingDetails GetAccepting(connectionMySQL db, int seasonID, int userID, int championshipID)
+        {
+            AcceptingDetails modelDetails = new AcceptingDetails();
+            DataTable dt = null;
+
+            try
+            {
+                modelDetails.seasonID = seasonID;
+                modelDetails.userID = userID;
+                modelDetails.championshipID = championshipID;
+
+                paramName = new string[] { "pIdTemporada", "pIdCampeonato", "pIdUsu" };
+                paramValue = new string[] { Convert.ToString(modelDetails.seasonID), Convert.ToString(modelDetails.championshipID), Convert.ToString(modelDetails.userID) };
+                dt = db.executePROC("spGetConfirmacaoTemporada", paramName, paramValue);
+
+                if (dt.Rows.Count > 0)
+                {
+                    modelDetails.confirmation = dt.Rows[0]["IN_CONFIRMACAO"].ToString();
+                    modelDetails.ordering = dt.Rows[0]["IN_ORDENACAO"].ToString();
+                    modelDetails.DateconfirmationFormatted = dt.Rows[0]["DT_CONFIRMACAO_FORMATADA"].ToString();
+                    modelDetails.psnID = dt.Rows[0]["PSN_ID"].ToString();
+                    modelDetails.teamName = dt.Rows[0]["NM_TIME"].ToString();
+                    modelDetails.statusID = dt.Rows[0]["DS_Status"].ToString();
+                    modelDetails.statusDescription = dt.Rows[0]["DS_Descricao_Status"].ToString();
+                }
+
+                return modelDetails;
+            }
+            catch (Exception ex)
+            {
+                return modelDetails;
+            }
+            finally
+            {
+                dt = null;
+                modelDetails = null;
+            }
+        }
+
+
+        private List<AcceptingDetails> getAllAccepting(connectionMySQL db)
+        {
+            AcceptingDetails modelDetails = new AcceptingDetails();
+            List<AcceptingDetails> listOfModel = new List<AcceptingDetails>();
+            DataTable dt = null;
 
             try
             {
@@ -89,7 +195,7 @@ namespace ArenaFifa20.API.NET.Controllers
 
                     if (string.IsNullOrEmpty(dt.Rows[i]["IN_CONFIRMACAO"].ToString()))
                         modelDetails.confirmationDescription = "Ainda não confirmou";
-                    else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString())==9)
+                    else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 9)
                         modelDetails.confirmationDescription = "Participação recusada pela Moderação";
                     else if (Convert.ToInt16(dt.Rows[i]["IN_CONFIRMACAO"].ToString()) == 0)
                         modelDetails.confirmationDescription = "Não deseja Participar";
@@ -127,80 +233,21 @@ namespace ArenaFifa20.API.NET.Controllers
                     listOfModel.Add(modelDetails);
                 }
 
-                mainModel.listOfAccepting = listOfModel;
-                mainModel.returnMessage = "ModeratorSuccessfully";
-                return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
+                return listOfModel;
 
             }
             catch (Exception ex)
             {
-                mainModel = new AcceptingNewSeasonViewModel();
-                mainModel.listOfAccepting = new List<AcceptingDetails>();
-                mainModel.returnMessage = "errorGetAllAccepting_" + ex.Message;
-                return CreatedAtRoute("DefaultApi", new { id = 0 }, mainModel);
+                return listOfModel;
             }
             finally
             {
-                db.closeConnection();
                 modelDetails = null;
-                mainModel = null;
                 listOfModel = null;
                 dt = null;
             }
-
         }
 
-
-        [HttpGet]
-        public IHttpActionResult GetAccepting(string id)
-        {
-
-            AcceptingDetails modelDetails = new AcceptingDetails();
-            DataTable dt = null;
-            db.openConnection();
-
-
-            try
-            {
-
-                string[] arrayPK = id.Split(Convert.ToChar(";"));
-
-                modelDetails.seasonID = Convert.ToInt16(arrayPK[0]);
-                modelDetails.userID = Convert.ToUInt16(arrayPK[1]);
-                modelDetails.championshipID = Convert.ToInt16(arrayPK[2]);
-
-                paramName = new string[] { "pIdTemporada", "pIdCampeonato", "pIdUsu" };
-                paramValue = new string[] { Convert.ToString(modelDetails.seasonID), Convert.ToString(modelDetails.championshipID), Convert.ToString(modelDetails.userID) };
-                dt = db.executePROC("spGetConfirmacaoTemporada", paramName, paramValue);
-
-                if (dt.Rows.Count>0)
-                {
-                    modelDetails.confirmation = dt.Rows[0]["IN_CONFIRMACAO"].ToString();
-                    modelDetails.ordering = dt.Rows[0]["IN_ORDENACAO"].ToString();
-                    modelDetails.DateconfirmationFormatted = dt.Rows[0]["DT_CONFIRMACAO_FORMATADA"].ToString();
-                    modelDetails.psnID = dt.Rows[0]["PSN_ID"].ToString();
-                    modelDetails.teamName = dt.Rows[0]["NM_TIME"].ToString();
-                    modelDetails.statusID = dt.Rows[0]["DS_Status"].ToString();
-                    modelDetails.statusDescription = dt.Rows[0]["DS_Descricao_Status"].ToString();
-                }
-
-                modelDetails.returnMessage = "ModeratorSuccessfully";
-                return CreatedAtRoute("DefaultApi", new { id = 0 }, modelDetails);
-
-            }
-            catch (Exception ex)
-            {
-                modelDetails.returnMessage = "errorGetAccepting_" + ex.Message;
-                return CreatedAtRoute("DefaultApi", new { id = 0 }, modelDetails);
-            }
-            finally
-            {
-                db.closeConnection();
-                modelDetails = null;
-                dt = null;
-            }
-
-        }
 
     }
 }

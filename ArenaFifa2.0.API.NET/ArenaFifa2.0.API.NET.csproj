@@ -94,6 +94,28 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Bin-GitHub\ArenaFifa2.0.API.NET.dll" />
+    <Content Include="Bin-GitHub\Commons.dll" />
+    <Content Include="Bin-GitHub\DBConnection.dll" />
+    <Content Include="Bin-GitHub\Google.Protobuf.dll" />
+    <Content Include="Bin-GitHub\Google.Protobuf.xml" />
+    <Content Include="Bin-GitHub\Interop.MSXML2.dll" />
+    <Content Include="Bin-GitHub\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll" />
+    <Content Include="Bin-GitHub\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml" />
+    <Content Include="Bin-GitHub\MySql.Data.dll" />
+    <Content Include="Bin-GitHub\MySql.Data.xml" />
+    <Content Include="Bin-GitHub\Newtonsoft.Json.dll" />
+    <Content Include="Bin-GitHub\Newtonsoft.Json.xml" />
+    <Content Include="Bin-GitHub\OldEncryption.dll" />
+    <Content Include="Bin-GitHub\OldEncryption.xml" />
+    <Content Include="Bin-GitHub\SYSEmail.dll" />
+    <Content Include="Bin-GitHub\SYSError.dll" />
+    <Content Include="Bin-GitHub\System.Net.Http.Formatting.dll" />
+    <Content Include="Bin-GitHub\System.Net.Http.Formatting.xml" />
+    <Content Include="Bin-GitHub\System.Web.Http.dll" />
+    <Content Include="Bin-GitHub\System.Web.Http.WebHost.dll" />
+    <Content Include="Bin-GitHub\System.Web.Http.WebHost.xml" />
+    <Content Include="Bin-GitHub\System.Web.Http.xml" />
     <Content Include="database scripts\ddl\Create Database ArenaFifa BKP.sql" />
     <Content Include="database scripts\ddl\Create Database ArenaFifa.sql" />
     <Content Include="database scripts\ddl\Create Database Blog.sql" />
@@ -236,6 +258,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
+    <Content Include="Bin-GitHub\ArenaFifa2.0.API.NET.dll.config" />
+    <Content Include="Bin-GitHub\DBConnection.dll.config" />
+    <Content Include="Bin-GitHub\OldEncryption.dll.config" />
+    <Content Include="Bin-GitHub\SYSEmail.dll.config" />
     <None Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
