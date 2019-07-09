@@ -16,19 +16,19 @@ namespace ArenaFifa20.API.NET
 
             config.Routes.MapHttpRoute(
                 name: "DefaultApi",
-                routeTemplate: "api/{controller}/{id}",
+                routeTemplate: "Arena20/api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
 
             config.Routes.MapHttpRoute(
                 name: "DefaultApiPsnID",
-                routeTemplate: "api/{controller}/{psnID}",
+                routeTemplate: "Arena20/api/{controller}/{psnID}",
                 defaults: new { psnID = RouteParameter.Optional }
             );
 
             config.Routes.MapHttpRoute(
                 name: "DefaultApiWithActionAndPsnID",
-                routeTemplate: "api/{controller}/{action}/{psnID}",
+                routeTemplate: "Arena20/api/{controller}/{action}/{psnID}",
                 defaults: new { psnID = RouteParameter.Optional }
             );
 

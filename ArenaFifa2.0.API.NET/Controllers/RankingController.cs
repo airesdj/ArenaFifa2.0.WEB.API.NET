@@ -35,9 +35,9 @@ namespace ArenaFifa20.API.NET.Controllers
                         paramValue = new string[] { };
                         dt = db.executePROC("spGetSummaryRanking", paramName, paramValue);
 
-                        model.totGoalsH2H = Convert.ToInt16(dt.Rows[0]["totalGoalsH2H"].ToString());
-                        model.totGoalsFUT = Convert.ToInt16(dt.Rows[0]["totalGoalsFUT"].ToString());
-                        model.totGoalsPRO = Convert.ToInt16(dt.Rows[0]["totalGoalsPRO"].ToString());
+                        model.totGoalsH2H = Convert.ToInt32(dt.Rows[0]["totalGoalsH2H"].ToString());
+                        model.totGoalsFUT = Convert.ToInt32(dt.Rows[0]["totalGoalsFUT"].ToString());
+                        model.totGoalsPRO = Convert.ToInt32(dt.Rows[0]["totalGoalsPRO"].ToString());
 
                         model.seasonNameH2H = dt.Rows[0]["seasonNameH2H"].ToString();
                         model.seasonNameFUT = dt.Rows[0]["seasonNameFUT"].ToString();
@@ -85,16 +85,16 @@ namespace ArenaFifa20.API.NET.Controllers
                         for (var i = 0; i < dt.Rows.Count; i++)
                         {
                             ranking = new listRanking();
-                            ranking.userID = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            ranking.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
                             ranking.psnID = dt.Rows[i]["PSN_ID"].ToString();
                             ranking.userName = dt.Rows[i]["NM_USUARIO"].ToString();
                             ranking.state = dt.Rows[i]["DS_ESTADO"].ToString();
-                            ranking.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
-                            ranking.totalSeason = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL_TEMPORADA"].ToString());
-                            ranking.totalPreviousSeason = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL_TEMPORADA_ANTERIOR"].ToString());
-                            ranking.totalLeague = Convert.ToUInt16(dt.Rows[i]["PT_LIGAS"].ToString());
-                            ranking.totalCup = Convert.ToUInt16(dt.Rows[i]["PT_COPAS"].ToString());
-                            ranking.position = Convert.ToInt16(dt.Rows[i]["IN_POSICAO_ATUAL"].ToString());
+                            ranking.total = Convert.ToInt32(dt.Rows[i]["PT_TOTAL"].ToString());
+                            ranking.totalSeason = Convert.ToInt32(dt.Rows[i]["PT_TOTAL_TEMPORADA"].ToString());
+                            ranking.totalPreviousSeason = Convert.ToInt32(dt.Rows[i]["PT_TOTAL_TEMPORADA_ANTERIOR"].ToString());
+                            ranking.totalLeague = Convert.ToInt32(dt.Rows[i]["PT_LIGAS"].ToString());
+                            ranking.totalCup = Convert.ToInt32(dt.Rows[i]["PT_COPAS"].ToString());
+                            ranking.position = Convert.ToInt32(dt.Rows[i]["IN_POSICAO_ATUAL"].ToString());
 
                             ranking.totalHalfStars = 0;
                             ranking.totalStars = 0;
@@ -206,12 +206,12 @@ namespace ArenaFifa20.API.NET.Controllers
                         for (var i = 0; i < dt.Rows.Count; i++)
                         {
                             ranking = new listRanking();
-                            ranking.userID = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            ranking.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
                             ranking.psnID = dt.Rows[i]["PSN_ID"].ToString();
                             ranking.userName = dt.Rows[i]["NM_USUARIO"].ToString();
                             ranking.teamName = dt.Rows[i]["NM_TIME"].ToString();
                             ranking.state = dt.Rows[i]["DS_ESTADO"].ToString();
-                            ranking.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+                            ranking.total = Convert.ToInt32(dt.Rows[i]["PT_TOTAL"].ToString());
                             listOfRanking.Add(ranking);
                         }
 
@@ -252,12 +252,12 @@ namespace ArenaFifa20.API.NET.Controllers
                         for (var i = 0; i < dt.Rows.Count; i++)
                         {
                             ranking = new listRanking();
-                            ranking.userID = Convert.ToUInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            ranking.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
                             ranking.psnID = dt.Rows[i]["PSN_ID"].ToString();
                             ranking.userName = dt.Rows[i]["NM_USUARIO"].ToString();
                             ranking.teamName = dt.Rows[i]["NM_TIME"].ToString();
                             ranking.state = dt.Rows[i]["DS_ESTADO"].ToString();
-                            ranking.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+                            ranking.total = Convert.ToInt32(dt.Rows[i]["PT_TOTAL"].ToString());
                             ranking.inAccessCurrentSeason = dt.Rows[i]["IN_ACESSO_TEMP_ATUAL"].ToString();
                             ranking.inRelegatePreviousSeason = dt.Rows[i]["IN_REBAIXADO_TEMP_ANTERIOR"].ToString();
                             listOfRanking.Add(ranking);
