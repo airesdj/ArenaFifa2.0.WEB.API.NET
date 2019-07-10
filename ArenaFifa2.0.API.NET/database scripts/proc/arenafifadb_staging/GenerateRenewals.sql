@@ -1,0 +1,378 @@
+USE `arenafifadb_staging`;
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spDeleteAllRecords` $$
+CREATE PROCEDURE `spDeleteAllRecords`()
+Begin
+	DELETE FROM tb_campeonato;
+	DELETE FROM tb_campeonato_time;
+	DELETE FROM tb_campeonato_usuario;
+	DELETE FROM tb_campeonato_usuario_seg_fase;
+	DELETE FROM tb_classificacao;
+	DELETE FROM tb_comentario_usuario;
+	DELETE FROM tb_confirm_elenco_pro;
+	DELETE FROM tb_confirmacao_temporada;
+	DELETE FROM tb_fase;
+	DELETE FROM tb_fase_campeonato;
+	DELETE FROM tb_goleador;
+	DELETE FROM tb_grupo;
+	DELETE FROM tb_historico_artilharia;
+	DELETE FROM tb_historico_artilharia_pro;
+	DELETE FROM tb_historico_conquista;
+	DELETE FROM tb_historico_conquista_fut;
+	DELETE FROM tb_historico_conquista_pro;
+	DELETE FROM tb_historico_temporada;
+	DELETE FROM tb_historico_temporada_fut;
+	DELETE FROM tb_historico_temporada_pro;
+	DELETE FROM tb_lista_banco_reserva;
+	DELETE FROM tb_lista_negra;
+	DELETE FROM tb_lista_negra_detalhe;
+	DELETE FROM tb_pontuacao_campeonato;
+	DELETE FROM tb_pote_time_grupo;
+	DELETE FROM tb_tabela_jogo;
+	DELETE FROM tb_temporada;
+	DELETE FROM tb_time;
+	DELETE FROM tb_times_fase_precopa;
+	DELETE FROM tb_tipo_campeonato;
+	DELETE FROM tb_tipo_time;
+	DELETE FROM tb_usuario;
+	DELETE FROM tb_usuario_time;
+
+	call arena_spooler.spDeleteAllSpoolerBySigla('SPOOLER_NOVA_TEMPORADA');
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spTransferDataFromOnlineDtb` $$
+CREATE PROCEDURE `spTransferDataFromOnlineDtb`()
+Begin
+	INSERT INTO tb_campeonato SELECT * FROM arenafifadb.tb_campeonato;
+	INSERT INTO tb_campeonato_time SELECT * FROM arenafifadb.tb_campeonato_time;
+	INSERT INTO tb_campeonato_usuario SELECT * FROM arenafifadb.tb_campeonato_usuario;
+	INSERT INTO tb_campeonato_usuario_seg_fase SELECT * FROM arenafifadb.tb_campeonato_usuario_seg_fase;
+	INSERT INTO tb_classificacao SELECT * FROM arenafifadb.tb_classificacao;
+	#INSERT INTO tb_confirm_elenco_pro SELECT * FROM arenafifadb.tb_confirm_elenco_pro;
+	#INSERT INTO tb_confirmacao_temporada SELECT * FROM arenafifadb.tb_confirmacao_temporada;
+	INSERT INTO tb_fase SELECT * FROM arenafifadb.tb_fase;
+	INSERT INTO tb_fase_campeonato SELECT * FROM arenafifadb.tb_fase_campeonato;
+	INSERT INTO tb_goleador SELECT * FROM arenafifadb.tb_goleador;
+	INSERT INTO tb_grupo SELECT * FROM arenafifadb.tb_grupo;
+	INSERT INTO tb_historico_artilharia SELECT * FROM arenafifadb.tb_historico_artilharia;
+	INSERT INTO tb_historico_artilharia_pro SELECT * FROM arenafifadb.tb_historico_artilharia_pro;
+	INSERT INTO tb_historico_conquista SELECT * FROM arenafifadb.tb_historico_conquista;
+	INSERT INTO tb_historico_conquista_fut SELECT * FROM arenafifadb.tb_historico_conquista_fut;
+	INSERT INTO tb_historico_conquista_pro SELECT * FROM arenafifadb.tb_historico_conquista_pro;
+	INSERT INTO tb_historico_temporada SELECT * FROM arenafifadb.tb_historico_temporada;
+	INSERT INTO tb_historico_temporada_fut SELECT * FROM arenafifadb.tb_historico_temporada_fut;
+	INSERT INTO tb_historico_temporada_pro SELECT * FROM arenafifadb.tb_historico_temporada_pro;
+	INSERT INTO tb_lista_banco_reserva SELECT * FROM arenafifadb.tb_lista_banco_reserva;
+	INSERT INTO tb_lista_negra SELECT * FROM arenafifadb.tb_lista_negra;
+	INSERT INTO tb_lista_negra_detalhe SELECT * FROM arenafifadb.tb_lista_negra_detalhe;
+	INSERT INTO tb_pontuacao_campeonato SELECT * FROM arenafifadb.tb_pontuacao_campeonato;
+	INSERT INTO tb_pote_time_grupo SELECT * FROM arenafifadb.tb_pote_time_grupo;
+	INSERT INTO tb_tabela_jogo SELECT * FROM arenafifadb.tb_tabela_jogo;
+	INSERT INTO tb_temporada SELECT * FROM arenafifadb.tb_temporada;
+	INSERT INTO tb_time SELECT * FROM arenafifadb.tb_time;
+	INSERT INTO tb_times_fase_precopa SELECT * FROM arenafifadb.tb_times_fase_precopa;
+	INSERT INTO tb_tipo_campeonato SELECT * FROM arenafifadb.tb_tipo_campeonato;
+	INSERT INTO tb_tipo_time SELECT * FROM arenafifadb.tb_tipo_time;
+	INSERT INTO tb_usuario SELECT * FROM arenafifadb.tb_usuario;
+	INSERT INTO tb_usuario_time SELECT * FROM arenafifadb.tb_usuario_time;
+	
+	UPDATE TB_USUARIO SET ID_USUARIO = 0 WHERE PSN_ID = 'ModeradoresAF';
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spCancelRenewalsForNextSeason` $$
+CREATE PROCEDURE `spCancelRenewalsForNextSeason`()
+Begin
+	DECLARE _currentSeasonID INTEGER DEFAULT 0;
+	DECLARE _nextSeasonID INTEGER DEFAULT 0;
+	
+	SET _currentSeasonID = arenafifadb.fcGetIdTempCurrent();
+	SET _nextSeasonID = _currentSeasonID + 1;
+	
+	DELETE FROM TB_CONFIRMACAO_TEMPORADA;
+	DELETE FROM TB_CONFIRM_ELENCO_PRO;
+	
+	call arena_spooler.spDeleteAllSpoolerBySigla('SPOOLER_NOVA_TEMPORADA');
+
+	DELETE FROM arenafifadb.tb_confirm_elenco_pro WHERE ID_TEMPORADA = _nextSeasonID;
+	DELETE FROM arenafifadb.tb_confirmacao_temporada WHERE ID_TEMPORADA = _nextSeasonID;
+End$$
+DELIMITER ;
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spCancelRenewalSpoolerForNextSeason` $$
+CREATE PROCEDURE `spCancelRenewalSpoolerForNextSeason`()
+Begin
+	DECLARE _currentSeasonID INTEGER DEFAULT 0;
+	DECLARE _nextSeasonID INTEGER DEFAULT 0;
+	
+	SET _currentSeasonID = arenafifadb.fcGetIdTempCurrent();
+	SET _nextSeasonID = _currentSeasonID + 1;
+	
+	call arena_spooler.spDeleteAllSpoolerBySigla('SPOOLER_NOVA_TEMPORADA');
+
+	DELETE FROM arenafifadb.tb_confirm_elenco_pro WHERE ID_TEMPORADA = _nextSeasonID;
+	DELETE FROM arenafifadb.tb_confirmacao_temporada WHERE ID_TEMPORADA = _nextSeasonID;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGenerateRenewalsForNextSeason` $$
+CREATE PROCEDURE `spGenerateRenewalsForNextSeason`(pInWorldCupNextSeason INTEGER)
+Begin
+	DECLARE _RENEWAL_BENCH_H2H INTEGER DEFAULT 0;
+	DECLARE _RENEWAL_SERIEA_H2H INTEGER DEFAULT 1;
+	DECLARE _RENEWAL_SERIEB_H2H INTEGER DEFAULT 2;
+	DECLARE _RENEWAL_SERIEC_H2H INTEGER DEFAULT 3;
+	DECLARE _RENEWAL_SERIED_H2H INTEGER DEFAULT 4;
+	DECLARE _RENEWAL_WORLDCUP_H2H INTEGER DEFAULT 5;
+	DECLARE _RENEWAL_BENCH_FUT INTEGER DEFAULT 7;
+	DECLARE _RENEWAL_SERIEA_FUT INTEGER DEFAULT 8;
+	DECLARE _RENEWAL_SERIEB_FUT INTEGER DEFAULT 9;
+	DECLARE _RENEWAL_BENCH_PRO INTEGER DEFAULT 13;
+	DECLARE _RENEWAL_SERIEA_PRO INTEGER DEFAULT 14;
+	DECLARE _RENEWAL_SERIEB_PRO INTEGER DEFAULT 15;
+
+	DECLARE _serieAH2HID INTEGER DEFAULT NULL;
+	DECLARE _serieBH2HID INTEGER DEFAULT NULL;
+	DECLARE _serieCH2HID INTEGER DEFAULT NULL;
+	DECLARE _serieDH2HID INTEGER DEFAULT NULL;
+	DECLARE _serieAFUTID INTEGER DEFAULT NULL;
+	DECLARE _serieBFUTID INTEGER DEFAULT NULL;
+	DECLARE _serieAPROID INTEGER DEFAULT NULL;
+	DECLARE _serieBPROID INTEGER DEFAULT NULL;
+
+	DECLARE _currentSeasonID INTEGER DEFAULT 0;
+	DECLARE _nextSeasonID INTEGER DEFAULT 0;
+	
+	SET _currentSeasonID = arenafifadb.fcGetIdTempCurrent();
+	SET _nextSeasonID = _currentSeasonID + 1;
+	
+	SELECT ID_CAMPEONATO into _serieAH2HID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'DIV1' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieAH2HID = COALESCE(_serieAH2HID, 0);
+	
+	SELECT ID_CAMPEONATO into _serieBH2HID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'DIV2' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieBH2HID = COALESCE(_serieBH2HID, 0);
+	
+	SELECT ID_CAMPEONATO into _serieCH2HID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'DIV3' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieCH2HID = COALESCE(_serieCH2HID, 0);
+	
+	SELECT ID_CAMPEONATO into _serieDH2HID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'DIV4' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieDH2HID = COALESCE(_serieDH2HID, 0);
+	
+	SELECT ID_CAMPEONATO into _serieAFUTID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'FUT1' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieAFUTID = COALESCE(_serieAFUTID, 0);
+	
+	SELECT ID_CAMPEONATO into _serieBFUTID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'FUT2' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieBFUTID = COALESCE(_serieBFUTID, 0);
+	
+	SELECT ID_CAMPEONATO into _serieAPROID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'PRO1' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieAPROID = COALESCE(_serieAPROID, 0);
+	
+	SELECT ID_CAMPEONATO into _serieBPROID FROM TB_CAMPEONATO 
+	WHERE ID_TEMPORADA = _currentSeasonID AND SG_TIPO_CAMPEONATO = 'PRO2' AND IN_CONSOLE = 'PS4' ORDER BY ID_CAMPEONATO LIMIT 1;
+	SET _serieBPROID = COALESCE(_serieBPROID, 0);
+	
+	IF pInWorldCupNextSeason = 1 THEN
+	
+		INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+		SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_WORLDCUP_H2H, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+		FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+		WHERE C.ID_CAMPEONATO IN (_serieAH2HID, _serieCH2HID, _serieCH2HID, _serieDH2HID)
+		  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+		  AND U.IN_USUARIO_ATIVO = True
+		  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+								   WHERE TP_BANCO_RESERVA = 'H2H' AND DT_FIM IS NULL)
+		  AND C.ID_USUARIO = U.ID_USUARIO
+		ORDER BY C.ID_USUARIO;
+	
+	END IF;
+	
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIEA_H2H, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieAH2HID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'H2H' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIEB_H2H, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieBH2HID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'H2H' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIEC_H2H, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieCH2HID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'H2H' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIED_H2H, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieDH2HID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'H2H' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, R.ID_USUARIO, _RENEWAL_BENCH_H2H, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_LISTA_BANCO_RESERVA R, TB_USUARIO U
+	WHERE R.TP_BANCO_RESERVA = 'H2H'
+	  AND R.DT_FIM IS NULL
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND R.ID_USUARIO = U.ID_USUARIO
+	ORDER BY R.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIEA_FUT, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieAFUTID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'FUT' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIEB_FUT, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieBFUTID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'FUT' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, R.ID_USUARIO, _RENEWAL_BENCH_FUT, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_LISTA_BANCO_RESERVA R, TB_USUARIO U
+	WHERE R.TP_BANCO_RESERVA = 'FUT'
+	  AND R.DT_FIM IS NULL
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND R.ID_USUARIO = U.ID_USUARIO
+	ORDER BY R.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIEA_PRO, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieAPROID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'PRO' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, C.ID_USUARIO, _RENEWAL_SERIEB_PRO, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_CAMPEONATO_USUARIO C, TB_USUARIO U
+	WHERE C.ID_CAMPEONATO = _serieBPROID
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_LISTA_BANCO_RESERVA
+							   WHERE TP_BANCO_RESERVA = 'PRO' AND DT_FIM IS NULL)
+	  AND C.ID_USUARIO = U.ID_USUARIO
+	ORDER BY C.ID_USUARIO;
+
+	INSERT INTO TB_CONFIRMACAO_TEMPORADA 
+	SELECT _nextSeasonID, R.ID_USUARIO, _RENEWAL_BENCH_PRO, NULL, NULL, 0, NULL, 'PS4', 'EA', 'Em Análise', NULL, NULL, NULL, NULL
+	FROM TB_LISTA_BANCO_RESERVA R, TB_USUARIO U
+	WHERE R.TP_BANCO_RESERVA = 'PRO'
+	  AND R.DT_FIM IS NULL
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND R.ID_USUARIO = U.ID_USUARIO
+	ORDER BY R.ID_USUARIO;
+	
+	INSERT INTO TB_CONFIRM_ELENCO_PRO
+	SELECT _nextSeasonID, arenafifadb.fcGetIdTimeByUsuario(CT.ID_CAMPEONATO, T.ID_TECNICO_FUT), G.ID_USUARIO, NOW()
+	FROM TB_GOLEADOR G, TB_TIME T, TB_CAMPEONATO_TIME CT
+	WHERE G.ID_TIME_SOFIFA = 0
+	  AND CT.ID_CAMPEONATO IN(_serieAPROID, _serieBPROID)
+	  AND CT.ID_TIME = T.ID_TIME
+	  AND T.ID_TIME = G.ID_TIME
+	  AND CT.ID_TIME = T.ID_TIME
+	ORDER BY G.ID_GOLEADOR;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spCreateRenewalSpoolerForNextSeason` $$
+CREATE PROCEDURE `spCreateRenewalSpoolerForNextSeason`(pIdUsuAction INTEGER)
+Begin
+	DECLARE _SPOOLER_EMAIL_NEW_SEASON VARCHAR(30) DEFAULT "SPOOLER_NOVA_TEMPORADA";
+
+	DECLARE _currentSeasonID INTEGER DEFAULT 0;
+	DECLARE _nextSeasonID INTEGER DEFAULT 0;
+	DECLARE _processID INTEGER DEFAULT 0;
+	
+	SET _currentSeasonID = arenafifadb.fcGetIdTempCurrent();
+	SET _nextSeasonID = _currentSeasonID + 1;
+	
+	call arena_spooler.spAddSpooler("Renovação Arena: Nova Temporada", _SPOOLER_EMAIL_NEW_SEASON, pIdUsuAction);
+	
+	SET _processID = arena_spooler.fcGetLastProcessID();
+	
+	SET @row_number = 0;
+
+	INSERT INTO arena_spooler.TB_PROCESSOS_EMAIL_DETALHE 
+	SELECT _processID, U.ID_USUARIO, (@row_number:=@row_number + 1), NULL, NULL, U.NM_USUARIO, U.PSN_ID, U.DS_EMAIL, NULL, 
+		   _currentSeasonID, NULL, U.IN_USUARIO_MODERADOR, NULL, NULL, pIdUsuAction, NULL, NULL
+	FROM TB_USUARIO U
+	WHERE U.ID_USUARIO > 1
+	  AND arenafifadb.fcGetIdUsuariosVazio(U.ID_USUARIO,'NOT')
+	  AND (U.ID_USUARIO = 381 OR U.ID_USUARIO NOT IN (SELECT CT.ID_USUARIO FROM TB_CONFIRMACAO_TEMPORADA CT WHERE CT.ID_TEMPORADA = _nextSeasonID 
+													  AND CT.ID_CAMPEONATO in (0,1,2,3,4,7,8,9,10,12,13,14) AND CT.IN_CONFIRMACAO in (9,1,0)))
+	  AND U.IN_USUARIO_ATIVO = True
+	  AND U.DS_EMAIL IS NOT NULL
+	ORDER BY U.ID_USUARIO;
+	
+	call arena_spooler.spUpdateTotalSpooler(_processID);
+	
+	DELETE FROM arenafifadb.tb_confirm_elenco_pro WHERE ID_TEMPORADA = _nextSeasonID;
+	DELETE FROM arenafifadb.tb_confirmacao_temporada WHERE ID_TEMPORADA = _nextSeasonID;
+	
+	INSERT INTO arenafifadb.tb_confirm_elenco_pro SELECT * FROM arenafifadb_staging.tb_confirm_elenco_pro WHERE ID_TEMPORADA = _nextSeasonID;
+	INSERT INTO arenafifadb.tb_confirmacao_temporada SELECT * FROM arenafifadb_staging.tb_confirmacao_temporada WHERE ID_TEMPORADA = _nextSeasonID;
+	
+End$$
+DELIMITER ;

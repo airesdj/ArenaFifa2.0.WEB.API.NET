@@ -19,9 +19,8 @@ namespace ArenaFifa20.API.NET.Controllers
         [HttpPost]
         public IHttpActionResult hallOfFame(HallOfFameSummaryViewModel model)
         {
-
-
-            db.openConnection(model.dataBaseName = null ?? GlobalVariables.DATABASE_NAME_ONLINE);
+            if (String.IsNullOrEmpty(model.dataBaseName)) { model.dataBaseName = GlobalVariables.DATABASE_NAME_ONLINE; }
+            db.openConnection(model.dataBaseName);
             DataTable dt = null;
             string returnMessage = String.Empty;
 
@@ -191,14 +190,14 @@ namespace ArenaFifa20.API.NET.Controllers
                             renewalChampionship = new RenewalChampionshipModel();
                             renewalChampionship.psnID = dt.Rows[i]["PSN_ID"].ToString();
                             renewalChampionship.userName = dt.Rows[i]["NM_USUARIO"].ToString();
-                            renewalChampionship.userID = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            renewalChampionship.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
                             renewalChampionship.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
                             renewalChampionship.teamName = dt.Rows[i]["NM_TIME"].ToString();
 
                             if (String.IsNullOrEmpty(dt.Rows[i]["PT_LSTNEGRA"].ToString()))
                                 blackListPoints = 0;
                             else
-                                blackListPoints = Convert.ToInt16(dt.Rows[i]["PT_LSTNEGRA"].ToString());
+                                blackListPoints = Convert.ToInt32(dt.Rows[i]["PT_LSTNEGRA"].ToString());
 
 
                             if (String.IsNullOrEmpty(dt.Rows[i]["IN_CONFIRMACAO"].ToString()))
@@ -232,19 +231,19 @@ namespace ArenaFifa20.API.NET.Controllers
 
 
                             if (model.renewalMode == "PRO")
-                                renewalChampionship.playersTotal = Convert.ToInt16(dt.Rows[i]["TOTAL_JOGADORES"].ToString());
+                                renewalChampionship.playersTotal = Convert.ToInt32(dt.Rows[i]["TOTAL_JOGADORES"].ToString());
 
                             renewalChampionship.blackListtotal = blackListPoints;
 
                             if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL"].ToString()))
                                 renewalChampionship.total = 0;
                             else
-                                renewalChampionship.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+                                renewalChampionship.total = Convert.ToInt32(dt.Rows[i]["PT_TOTAL"].ToString());
 
                             if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString()))
                                 renewalChampionship.seasonCurrentTotal = 0;
                             else
-                                renewalChampionship.seasonCurrentTotal = Convert.ToInt16(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
+                                renewalChampionship.seasonCurrentTotal = Convert.ToInt32(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
 
                             renewalChampionship.grandTotal = renewalChampionship.total + renewalChampionship.seasonCurrentTotal;
 
@@ -274,14 +273,14 @@ namespace ArenaFifa20.API.NET.Controllers
                             renewalChampionship = new RenewalChampionshipModel();
                             renewalChampionship.psnID = dt.Rows[i]["PSN_ID"].ToString();
                             renewalChampionship.userName = dt.Rows[i]["NM_USUARIO"].ToString();
-                            renewalChampionship.userID = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                            renewalChampionship.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
                             renewalChampionship.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
                             renewalChampionship.teamName = dt.Rows[i]["NM_TIME"].ToString();
 
                             if (String.IsNullOrEmpty(dt.Rows[i]["PT_LSTNEGRA"].ToString()))
                                 blackListPoints = 0;
                             else
-                                blackListPoints = Convert.ToInt16(dt.Rows[i]["PT_LSTNEGRA"].ToString());
+                                blackListPoints = Convert.ToInt32(dt.Rows[i]["PT_LSTNEGRA"].ToString());
 
 
                             if (String.IsNullOrEmpty(dt.Rows[i]["IN_CONFIRMACAO"].ToString()))
@@ -315,13 +314,13 @@ namespace ArenaFifa20.API.NET.Controllers
 
 
                             if (model.renewalMode == "PRO")
-                                renewalChampionship.playersTotal = Convert.ToInt16(dt.Rows[i]["TOTAL_JOGADORES"].ToString());
+                                renewalChampionship.playersTotal = Convert.ToInt32(dt.Rows[i]["TOTAL_JOGADORES"].ToString());
 
                             renewalChampionship.blackListtotal = blackListPoints;
                             if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL"].ToString()))
                                 renewalChampionship.total = 0;
                             else
-                                renewalChampionship.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+                                renewalChampionship.total = Convert.ToInt32(dt.Rows[i]["PT_TOTAL"].ToString());
                             renewalChampionship.seasonCurrentTotal = 0; // Convert.ToInt16(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
                             renewalChampionship.grandTotal = renewalChampionship.total + renewalChampionship.seasonCurrentTotal;
 
@@ -342,14 +341,14 @@ namespace ArenaFifa20.API.NET.Controllers
                                 renewalChampionship = new RenewalChampionshipModel();
                                 renewalChampionship.psnID = dt.Rows[i]["PSN_ID"].ToString();
                                 renewalChampionship.userName = dt.Rows[i]["NM_USUARIO"].ToString();
-                                renewalChampionship.userID = Convert.ToInt16(dt.Rows[i]["ID_USUARIO"].ToString());
+                                renewalChampionship.userID = Convert.ToInt32(dt.Rows[i]["ID_USUARIO"].ToString());
                                 renewalChampionship.championshipID = Convert.ToInt16(dt.Rows[i]["ID_CAMPEONATO"].ToString());
                                 renewalChampionship.teamName = String.Empty;
 
                                 if (String.IsNullOrEmpty(dt.Rows[i]["PT_LSTNEGRA"].ToString()))
                                     blackListPoints = 0;
                                 else
-                                    blackListPoints = Convert.ToInt16(dt.Rows[i]["PT_LSTNEGRA"].ToString());
+                                    blackListPoints = Convert.ToInt32(dt.Rows[i]["PT_LSTNEGRA"].ToString());
 
 
                                 if (String.IsNullOrEmpty(dt.Rows[i]["IN_CONFIRMACAO"].ToString()))
@@ -385,12 +384,12 @@ namespace ArenaFifa20.API.NET.Controllers
                                 if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL"].ToString()))
                                     renewalChampionship.total = 0;
                                 else
-                                    renewalChampionship.total = Convert.ToUInt16(dt.Rows[i]["PT_TOTAL"].ToString());
+                                    renewalChampionship.total = Convert.ToInt32(dt.Rows[i]["PT_TOTAL"].ToString());
 
                                 if (String.IsNullOrEmpty(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString()))
                                     renewalChampionship.seasonCurrentTotal = 0;
                                 else
-                                    renewalChampionship.seasonCurrentTotal = Convert.ToInt16(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
+                                    renewalChampionship.seasonCurrentTotal = Convert.ToInt32(dt.Rows[i]["PT_TOTAL_ATUAL"].ToString());
 
                                 renewalChampionship.grandTotal = renewalChampionship.total + renewalChampionship.seasonCurrentTotal;
 

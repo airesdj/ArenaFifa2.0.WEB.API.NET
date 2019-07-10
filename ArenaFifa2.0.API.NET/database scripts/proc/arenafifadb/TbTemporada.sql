@@ -85,17 +85,16 @@ begin
 	DECLARE _nmTempPrevious VARCHAR(50) DEFAULT NULL;
 	DECLARE _idTempPrevious INTEGER DEFAULT NULL;
 	
-	SET _idTemp = fcGetIdTempCurrent();
-	SET _idTempPrevious = fcGetIdTempPrevious();
+	SET _idTempPrevious = fcGetIdTempCurrent();
+	SET _idTemp = _idTempPrevious + 1;
 	
-	SELECT NM_TEMPORADA into _nmTemp FROM TB_TEMPORADA WHERE ID_TEMPORADA = _idTemp;
 	SELECT NM_TEMPORADA into _nmTempPrevious FROM TB_TEMPORADA WHERE ID_TEMPORADA = _idTempPrevious;
-
+	SET _nmTemp = CONCAT((_idTemp - 1), "ª Temporada");
+	
 	SELECT _idTemp as id_current_temporada, _nmTemp as nm_current_temporada, _idTempPrevious as id_previous_temporada, _nmTempPrevious as nm_previous_temporada;
 	
 End$$
 DELIMITER ;
-
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetIDCurrentTemporada` $$

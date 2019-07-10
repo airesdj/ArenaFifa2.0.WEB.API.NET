@@ -178,7 +178,6 @@ begin
    from TB_CONFIRMACAO_TEMPORADA C, TB_USUARIO U
    where C.ID_TEMPORADA = pIdTemporada
    and FIND_IN_SET(C.ID_CAMPEONATO, pIdsCampeonato)
-   and C.IN_CONFIRMACAO = 1
    and U.IN_USUARIO_ATIVO = TRUE
    and U.IN_DESEJA_PARTICIPAR = 1
    and C.ID_USUARIO = U.ID_USUARIO) as X

@@ -29,6 +29,11 @@ begin
 	WHERE ID_TEMPORADA < _seasonIDCurrent AND SG_TIPO_CAMPEONATO = "DIV1" 
 	ORDER BY ID_CAMPEONATO DESC LIMIT 1;
 	
+	SELECT ID_CAMPEONATO, ID_TEMPORADA into _championshipID, _seasonID
+	FROM TB_CAMPEONATO
+	WHERE ID_TEMPORADA < _seasonIDCurrent AND SG_TIPO_CAMPEONATO = "DIV1" 
+	ORDER BY ID_CAMPEONATO DESC LIMIT 1;
+	
 	SELECT U.PSN_ID, T.NM_TIME into _psnIDSerieAH2H, _teamNameSerieAH2H
 	FROM TB_HISTORICO_CONQUISTA H, TB_USUARIO U, TB_TIME T
 	WHERE ID_TEMPORADA = _seasonID AND ID_CAMPEONATO = _championshipID
@@ -101,8 +106,6 @@ begin
 	WHERE ID_TEMPORADA = _seasonID AND ID_CAMPEONATO = _championshipID
 	AND H.ID_USUARIO_CAMPEAO = U.ID_USUARIO AND H.ID_TIME_CAMPEAO = T.ID_TIME;
 	
-
-
 	SELECT _psnIDSerieAH2H as psnIDH2HChampion, _teamNameSerieAH2H as teamNameH2HChampion,
 		   _psnIDSerieAFUT as psnIDFUTChampion, _teamNameSerieAFUT as teamNameFUTChampion,
 		   _psnIDSerieAPRO as psnIDPROChampion, _teamNameSerieAPRO as teamNamePROChampion,
@@ -921,5 +924,80 @@ begin
 	and T.ID_TIME = UT.ID_TIME
 	and UT.ID_USUARIO = U.ID_USUARIO
 	order by C.ID_GRUPO, C.QT_PONTOS_GANHOS desc, C.QT_VITORIAS desc, (C.QT_GOLS_PRO-C.QT_GOLS_CONTRA) desc, C.QT_GOLS_PRO desc, C.QT_GOLS_CONTRA, T.NM_TIME LIMIT 5;      
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetSummaryGenerateRenwal` $$
+CREATE PROCEDURE `spGetSummaryGenerateRenwal`()
+begin      
+	DECLARE _seasonH2HID INTEGER DEFAULT 0;
+	DECLARE _seasonH2HName VARCHAR(50) DEFAULT "";
+	DECLARE _totalUsersBcoOnLine INTEGER DEFAULT 0;
+	DECLARE _totalUsersBcoStaging INTEGER DEFAULT 0;
+	DECLARE _lastSeasonH2HID INTEGER DEFAULT 0;
+	DECLARE _totalUsersRenewal INTEGER DEFAULT 0;
+	DECLARE _totalEmailsRenewal INTEGER DEFAULT 0;
+	DECLARE _processID INTEGER DEFAULT 0;
+	DECLARE _lastSeasonH2HName VARCHAR(50) DEFAULT "";
+	DECLARE _totalRenewals INTEGER DEFAULT 0;
+	DECLARE _totalSpoolerEmails INTEGER DEFAULT 0;
+	DECLARE _totalAux INTEGER DEFAULT 0;
+	DECLARE _isPreparedBefore INTEGER DEFAULT 0;
+
+	SET _seasonH2HID = fcGetIdTempCurrent();
+
+	SELECT ID_TEMPORADA, NM_TEMPORADA into _seasonH2HID, _seasonH2HName
+	FROM TB_TEMPORADA
+	WHERE ID_TEMPORADA = fcGetIdTempCurrent();
+	
+	SELECT count(1) into _totalUsersBcoOnLine
+	FROM TB_USUARIO
+	WHERE ID_USUARIO > 1 AND IN_USUARIO_ATIVO = true
+	AND fcGetIdUsuariosVazio(ID_USUARIO,'NOT');
+
+	SELECT count(1) into _totalUsersBcoStaging
+	FROM arenafifadb_staging.TB_USUARIO
+	WHERE ID_USUARIO > 1 AND IN_USUARIO_ATIVO = true
+	AND fcGetIdUsuariosVazio(ID_USUARIO,'NOT');
+
+	SELECT ID_TEMPORADA, NM_TEMPORADA into _lastSeasonH2HID, _lastSeasonH2HName
+	FROM TB_TEMPORADA
+	WHERE ID_TEMPORADA < _seasonH2HID
+	ORDER BY ID_TEMPORADA DESC LIMIT 1;
+	
+	SELECT count(1) into _totalUsersRenewal
+	FROM arenafifadb_staging.TB_CONFIRMACAO_TEMPORADA WHERE ID_TEMPORADA = (_seasonH2HID + 1);
+
+	SELECT ID_PROCESSO into _processID FROM arena_spooler.TB_SPOOLER_PROCESSOS_EMAIL
+	WHERE SL_PROCESSO = 'SPOOLER_NOVA_TEMPORADA'
+	ORDER BY ID_PROCESSO DESC LIMIT 1;
+
+	SELECT count(1) into _totalEmailsRenewal
+	FROM arena_spooler.TB_PROCESSOS_EMAIL_DETALHE WHERE ID_PROCESSO = _processID;
+
+	SELECT count(1) into _totalSpoolerEmails FROM arena_spooler.TB_SPOOLER_PROCESSOS_EMAIL
+	WHERE SL_PROCESSO = 'SPOOLER_NOVA_TEMPORADA';
+	
+	SELECT count(1) into _totalRenewals FROM arenafifadb_staging.TB_CONFIRMACAO_TEMPORADA;
+
+	SELECT count(1) into _totalAux FROM arenafifadb_staging.TB_USUARIO;
+	IF _totalAux > 0 THEN
+		SET _isPreparedBefore = 1;
+	END IF;
+
+
+	SELECT _seasonH2HID as seasonH2HID, _seasonH2HName as seasonH2HName,
+		   _seasonH2HID as seasonFUTID, _seasonH2HName as seasonFUTName,
+		   _seasonH2HID as seasonPROID, _seasonH2HName as seasonPROName,
+		   _totalUsersBcoOnLine as totalUsersBcoOnLine, _totalUsersBcoStaging as totalUsersBcoStaging,
+		   _lastSeasonH2HID as lastSeasonH2HID, _lastSeasonH2HName as lastSeasonH2HName,
+		   _lastSeasonH2HID as lastSeasonFUTID, _lastSeasonH2HName as lastSeasonFUTName,
+		   _lastSeasonH2HID as lastSeasonPROID, _lastSeasonH2HName as lastSeasonPROName,
+		   _totalUsersRenewal as totalUsersRenewal, _totalEmailsRenewal as totalEmailsRenewal,
+		   _totalRenewals as totalRenewals, _totalSpoolerEmails as totalSpoolerEmails,
+		   _isPreparedBefore as isPreparedBefore;
+   
 End$$
 DELIMITER ;

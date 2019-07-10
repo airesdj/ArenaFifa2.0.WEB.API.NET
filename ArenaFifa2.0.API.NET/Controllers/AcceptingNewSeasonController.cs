@@ -20,9 +20,11 @@ namespace ArenaFifa20.API.NET.Controllers
         [HttpPost]
         public IHttpActionResult postAccepting(AcceptingNewSeasonViewModel model)
         {
-            db.openConnection(model.dataBaseName = null ?? GlobalVariables.DATABASE_NAME_ONLINE);
+            if (String.IsNullOrEmpty(model.dataBaseName)) { model.dataBaseName = GlobalVariables.DATABASE_NAME_ONLINE; }
+            db.openConnection(model.dataBaseName);
             var objFunctions = new Commons.functions();
             AcceptingNewSeasonViewModel mainModel = new AcceptingNewSeasonViewModel();
+            AcceptingDetails modelDetails = new AcceptingDetails();
             DataTable dt = null;
             try
             {
@@ -44,9 +46,9 @@ namespace ArenaFifa20.API.NET.Controllers
                 }
                 else if (model.actionUser == "getAccepting-staging")
                 {
-                    model.listOfAccepting = getAllAccepting(db);
-                    model.returnMessage = "ModeratorSuccessfully";
-                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                    modelDetails = GetAccepting(db, model.seasonID, model.userID, model.championshipID);
+                    modelDetails.returnMessage = "ModeratorSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelDetails);
                 }
                 else
                 {
@@ -64,7 +66,7 @@ namespace ArenaFifa20.API.NET.Controllers
                 db.closeConnection();
                 mainModel = null;
                 dt = null;
-
+                modelDetails = null;
             }
         }
 

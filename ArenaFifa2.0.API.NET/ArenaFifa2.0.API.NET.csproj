@@ -194,6 +194,7 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Controllers\CurrentSeasonController.cs" />
+    <Compile Include="Controllers\GenerateRenewalController.cs" />
     <Compile Include="Controllers\MyMatchesController.cs" />
     <Compile Include="Controllers\SpoolerController.cs" />
     <Compile Include="Controllers\ChampionshipController.cs" />
@@ -236,6 +237,7 @@
     <Compile Include="Models\ChampionshipTeamModel.cs" />
     <Compile Include="Models\ChampionshipStageModel.cs" />
     <Compile Include="Models\ChampionshipUserModel.cs" />
+    <Compile Include="Models\GenerateRenewalModel.cs" />
     <Compile Include="Models\MyMatchesModel.cs" />
     <Compile Include="Models\ScorerMatchModel.cs" />
     <Compile Include="Models\SpoolerModel.cs" />
