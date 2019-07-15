@@ -237,6 +237,7 @@
     <Compile Include="Models\ChampionshipTeamModel.cs" />
     <Compile Include="Models\ChampionshipStageModel.cs" />
     <Compile Include="Models\ChampionshipUserModel.cs" />
+    <Compile Include="Models\GenerateNewSeasonModel.cs" />
     <Compile Include="Models\GenerateRenewalModel.cs" />
     <Compile Include="Models\MyMatchesModel.cs" />
     <Compile Include="Models\ScorerMatchModel.cs" />
