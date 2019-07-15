@@ -78,6 +78,87 @@ namespace ArenaFifa20.API.NET.Controllers
                     getSummaryDetails(ref model, db, true);
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
+                else if (model.actionUser == "getDetailsRenewalHome")
+                {
+                    paramName = new string[] { "pIdUser" };
+                    paramValue = new string[] { model.renewalModel.userID.ToString() };
+                    dt = db.executePROC("spGetAllDetailsRenewalHome", paramName, paramValue);
+
+
+                    model.renewalModel.seasonID = Convert.ToInt16(dt.Rows[0]["temporadaID"].ToString());
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["confirmH2H"].ToString()))
+                    {
+                        if (dt.Rows[0]["confirmH2H"].ToString() == "1")
+                            model.renewalModel.checkYESH2H = true;
+                        else if (dt.Rows[0]["confirmH2H"].ToString() == "0")
+                            model.renewalModel.checkNOH2H = true;
+                    }
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["confirmFUT"].ToString()))
+                    {
+                        if (dt.Rows[0]["confirmFUT"].ToString() == "1")
+                            model.renewalModel.checkYESFUT = true;
+                        else if (dt.Rows[0]["confirmFUT"].ToString() == "0")
+                            model.renewalModel.checkNOFUT = true;
+                    }
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["confirmPRO"].ToString()))
+                    {
+                        if (dt.Rows[0]["confirmPRO"].ToString() == "1")
+                            model.renewalModel.checkYESPRO = true;
+                        else if (dt.Rows[0]["confirmPRO"].ToString() == "0")
+                            model.renewalModel.checkNOPRO = true;
+                    }
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["confirmWC"].ToString()))
+                    {
+                        if (dt.Rows[0]["confirmWC"].ToString() == "1")
+                            model.renewalModel.checkYESWDC = true;
+                        else if (dt.Rows[0]["confirmWC"].ToString() == "0")
+                            model.renewalModel.checkNOWDC = true;
+                    }
+
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["nmTimeFUT"].ToString()))
+                        model.renewalModel.teamNameFUT = dt.Rows[0]["nmTimeFUT"].ToString();
+
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["nmTimePRO"].ToString()))
+                        model.renewalModel.teamNamePRO = dt.Rows[0]["nmTimePRO"].ToString();
+
+                    if (!String.IsNullOrEmpty(dt.Rows[0]["mobile"].ToString()))
+                    {
+                        model.renewalModel.ddd = dt.Rows[0]["ddd"].ToString();
+                        model.renewalModel.mobile = dt.Rows[0]["mobile"].ToString();
+                    }
+
+                    model.returnMessage = "GenerateRenewalSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser == "saveRenewalNewSeasonHome")
+                {
+                    int confirmH2H = -1;
+                    int confirmFUT = -1;
+                    int confirmPRO = -1;
+                    int confirmWC = -1;
+
+                    if (model.renewalModel.checkYESH2H) { confirmH2H = 1; }
+                    else if (model.renewalModel.checkYESH2H) { confirmH2H = 0; }
+
+                    if (model.renewalModel.checkYESFUT) { confirmFUT = 1; }
+                    else if (model.renewalModel.checkNOFUT) { confirmFUT = 0; }
+
+                    if (model.renewalModel.checkYESPRO) { confirmPRO = 1; }
+                    else if (model.renewalModel.checkNOPRO) { confirmPRO = 0; }
+
+                    if (model.renewalModel.checkYESWDC) { confirmWC = 1; }
+                    else if (model.renewalModel.checkNOWDC) { confirmWC = 0; }
+
+
+                    paramName = new string[] { "pIdTemporada", "pIdUsu", "pInConfirmH2H", "pInConfirmFUT", "pInConfirmPRO", "pInConfirmWC", "pNmTeamFUT", "pNmTeamPRO", "pDDD", "pMobile" };
+                    paramValue = new string[] { model.renewalModel.seasonID.ToString(), model.renewalModel.userID.ToString(), confirmH2H.ToString(),
+                                                confirmFUT.ToString(), confirmPRO.ToString(), confirmWC.ToString(), model.renewalModel.teamNameFUT,
+                                                model.renewalModel.teamNamePRO, model.renewalModel.ddd, model.renewalModel.mobile };
+                    db.executePROCNonResult("spControlConfirmacaoTemporada", paramName, paramValue);
+
+                    model.returnMessage = "GenerateRenewalSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
                 else
                 {
                     return StatusCode(HttpStatusCode.NotAcceptable);

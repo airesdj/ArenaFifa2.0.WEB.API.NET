@@ -2,6 +2,188 @@ USE `arenafifadb`;
 
 ALTER TABLE TB_CONFIRMACAO_TEMPORADA MODIFY DT_CONFIRMACAO DATE;
 
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spAddDeclineConfirmacaoTemporadaRenovacao` $$
+CREATE PROCEDURE `spAddDeclineConfirmacaoTemporadaRenovacao`(
+	pIdTemporada INTEGER,
+	pIdCampeonato INTEGER,
+	pIdUsu INTEGER
+)
+begin
+	DECLARE _total INTEGER DEFAULT 0;
+	
+	select count(1) into _total
+	from TB_CONFIRMACAO_TEMPORADA
+	where ID_TEMPORADA = pIdTemporada
+	and ID_USUARIO = pIdUsu
+	and ID_CAMPEONATO = pIdCampeonato;
+	
+	IF _total > 0 THEN
+	
+		update TB_CONFIRMACAO_TEMPORADA
+		set IN_ORDENACAO = 0,
+		IN_CONFIRMACAO = 0,
+		DS_STATUS = 'AP',
+		DT_CONFIRMACAO = NOW()
+		where ID_TEMPORADA = pIdTemporada
+		and ID_USUARIO = pIdUsu
+		and ID_CAMPEONATO = pIdCampeonato;
+
+	ELSE
+	
+		insert into TB_CONFIRMACAO_TEMPORADA (ID_TEMPORADA, ID_USUARIO, ID_CAMPEONATO, IN_CONSOLE, IN_ORDENACAO, IN_CONFIRMACAO, DS_STATUS, DT_CONFIRMACAO)
+		values (pIdTemporada, pIdUsu, pIdCampeonato, 'PS4', 0, 0, 'AP', NOW());
+		
+	END IF;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spControlConfirmacaoTemporada` $$
+CREATE PROCEDURE `spControlConfirmacaoTemporada`(
+	pIdTemporada INTEGER,
+	pIdUsu INTEGER, 
+	pInConfirmH2H INTEGER,
+	pInConfirmFUT INTEGER,
+	pInConfirmPRO INTEGER,
+	pInConfirmWC INTEGER,
+	pNmTeamFUT VARCHAR(50),
+	pNmTeamPRO VARCHAR(50),
+	pDDD VARCHAR(2),
+	pMobile VARCHAR(15)
+)
+begin
+	DECLARE _campeonatoID INTEGER DEFAULT NULL;
+	DECLARE _total INTEGER DEFAULT NULL;
+	DECLARE _idTime INTEGER DEFAULT NULL;
+	
+	IF pIdTemporada = 0 THEN
+		SET pIdTemporada = fcGetIdTempCurrent() + 1;
+	END IF;
+	
+	IF pInConfirmH2H > -1 THEN
+	
+		SELECT ID_CAMPEONATO into _campeonatoID FROM TB_CONFIRMACAO_TEMPORADA
+		WHERE ID_TEMPORADA = pIdTemporada
+		  AND ID_CAMPEONATO IN (0,1,2,3,4)
+		  AND ID_USUARIO = pIdUsu ORDER BY ID_CAMPEONATO LIMIT 1;
+		  
+		IF _campeonatoID IS NULL THEN
+			SET _campeonatoID = 0;
+		END IF;
+		
+		IF pInConfirmH2H = 1 THEN
+		
+			call arenafifadb.spAddUpdateConfirmacaoTemporada(pIdTemporada, _campeonatoID, pIdUsu, 1, 0, NULL);
+		
+		ELSE
+
+			call arenafifadb.spAddDeclineConfirmacaoTemporadaRenovacao(pIdTemporada, _campeonatoID, pIdUsu);
+		
+		END IF;
+	
+	END IF;
+	
+	IF pInConfirmWC > -1 THEN
+	
+		SET _campeonatoID = 5;
+		
+		IF pInConfirmWC = 1 THEN
+		
+			call arenafifadb.spAddUpdateConfirmacaoTemporada(pIdTemporada, _campeonatoID, pIdUsu, 1, 0, NULL);
+		
+		ELSE
+
+			call arenafifadb.spAddDeclineConfirmacaoTemporadaRenovacao(pIdTemporada, _campeonatoID, pIdUsu);
+		
+		END IF;
+	
+	END IF;
+	
+	IF pInConfirmFUT > -1 THEN
+	
+		SET _campeonatoID = NULL;
+	
+		SELECT ID_CAMPEONATO into _campeonatoID FROM TB_CONFIRMACAO_TEMPORADA
+		WHERE ID_TEMPORADA = pIdTemporada
+		  AND ID_CAMPEONATO IN (7, 8, 9)
+		  AND ID_USUARIO = pIdUsu ORDER BY ID_CAMPEONATO LIMIT 1;
+		
+		IF _campeonatoID IS NULL THEN
+			SET _campeonatoID = 7;
+		END IF;
+		
+		IF pInConfirmFUT = 1 THEN
+		
+			call arenafifadb.spAddUpdateConfirmacaoTemporada(pIdTemporada, _campeonatoID, pIdUsu, 1, 0, pNmTeamFUT);
+		
+		ELSE
+
+			call arenafifadb.spAddDeclineConfirmacaoTemporadaRenovacao(pIdTemporada, _campeonatoID, pIdUsu);
+		
+		END IF;
+	
+	END IF;
+	
+	IF pInConfirmPRO > -1 THEN
+	
+		SET _campeonatoID = NULL;
+	
+		SELECT ID_CAMPEONATO into _campeonatoID FROM TB_CONFIRMACAO_TEMPORADA
+		WHERE ID_TEMPORADA = pIdTemporada
+		  AND ID_CAMPEONATO IN (13, 14, 15)
+		  AND ID_USUARIO = pIdUsu ORDER BY ID_CAMPEONATO LIMIT 1;
+		
+		IF _campeonatoID IS NULL THEN
+			SET _campeonatoID = 13;
+		END IF;
+		
+		IF pInConfirmPRO = 1 THEN
+		
+			call arenafifadb.spAddUpdateConfirmacaoTemporada(pIdTemporada, _campeonatoID, pIdUsu, 1, 0, pNmTeamPRO);
+			
+			SELECT count(1) into _total FROM TB_CONFIRM_ELENCO_PRO
+			WHERE ID_TEMPORADA = pIdTemporada AND ID_USUARIO_MANAGER = pIdUsu;
+			
+			IF _total = 0 THEN
+			
+				insert into TB_CONFIRM_ELENCO_PRO (ID_TEMPORADA, ID_USUARIO_MANAGER, ID_USUARIO, DT_CONFIRMACAO)
+				values (pIdTemporada, pIdUsu, pIdUsu, NOW());
+				
+				SET _idTime = fcGetCurrentIdTimePRO(pIdUsu);
+				
+				IF (_idTime IS NOT NULL) THEN
+				
+					insert into TB_CONFIRM_ELENCO_PRO (ID_TEMPORADA, ID_USUARIO_MANAGER, ID_USUARIO, DT_CONFIRMACAO)
+					select pIdTemporada, pIdUsu, TB_GOLEADOR.ID_USUARIO, DATE_ADD(NOW(), INTERVAL 10 SECOND) 
+					from TB_GOLEADOR
+					where ID_TIME = _idTime
+					and ID_USUARIO NOT IN (pIdUsu)
+					order by ID_USUARIO;
+				
+				END IF;
+			
+			END IF;
+		
+		ELSE
+
+			call arenafifadb.spAddDeclineConfirmacaoTemporadaRenovacao(pIdTemporada, _campeonatoID, pIdUsu);
+			
+			DELETE FROM TB_CONFIRM_ELENCO_PRO WHERE ID_TEMPORADA = pIdTemporada AND ID_USUARIO_MANAGER = pIdUsu;
+		
+		END IF;
+	
+	END IF;
+
+	IF COALESCE(pMobile, "") <> "" THEN
+
+		UPDATE TB_USUARIO SET NO_DDD = pDDD, NO_CELULAR = pMobile WHERE ID_USUARIO = pIdUsu;
+	
+	END IF;
+	
+End$$
+DELIMITER ;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddUpdateConfirmacaoTemporada` $$
@@ -16,6 +198,7 @@ CREATE PROCEDURE `spAddUpdateConfirmacaoTemporada`(
 begin
 	DECLARE _inLastOrdenacao INTEGER DEFAULT NULL;
 	DECLARE _inUsuarioFound INTEGER DEFAULT 0;
+	DECLARE _inConfirmDate DATETIME DEFAULT NULL;
 
 	IF pIdTemporada = 0 THEN
 		SET pIdTemporada = fcGetIdTempCurrent() + 1;
@@ -52,17 +235,25 @@ begin
 	and ID_CAMPEONATO = pIdCampeonato
 	and ID_USUARIO = pIdUsu;
 	
+	
+	IF pInConfirm >= 0 THEN
+		SET _inConfirmDate = CURRENT_DATE();
+    ELSE
+		SET _inConfirmDate = NULL;
+		SET _inLastOrdenacao = 0;
+	END IF;
+	
 	IF (_inUsuarioFound = 0) THEN
 	
 		insert into TB_CONFIRMACAO_TEMPORADA (ID_TEMPORADA, ID_CAMPEONATO, ID_USUARIO, NM_TIME, IN_CONFIRMACAO, IN_ORDENACAO, DT_CONFIRMACAO, IN_CONSOLE, DS_STATUS, DS_DESCRICAO_STATUS)
-		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimeFUT, pInConfirm, _inLastOrdenacao, CURRENT_DATE(), 'PS4', 'AP', 'Aprovada.');
+		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimeFUT, pInConfirm, _inLastOrdenacao, _inConfirmDate, 'PS4', 'AP', 'Aprovada.');
 	
 	ELSE
 	
 		update TB_CONFIRMACAO_TEMPORADA
 		set NM_TIME = pNmTimeFUT,
 		IN_CONFIRMACAO = pInConfirm,
-		DT_CONFIRMACAO = CURRENT_DATE(),
+		DT_CONFIRMACAO = _inConfirmDate,
 		IN_ORDENACAO = _inLastOrdenacao
 		where ID_TEMPORADA = pIdTemporada
 		and ID_USUARIO = pIdUsu
@@ -73,7 +264,6 @@ End$$
 DELIMITER ;
 
 
-
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddUpdateConfirmacaoTemporadaPRO` $$
 CREATE PROCEDURE `spAddUpdateConfirmacaoTemporadaPRO`(
@@ -81,7 +271,7 @@ CREATE PROCEDURE `spAddUpdateConfirmacaoTemporadaPRO`(
 	pIdCampeonato INTEGER,
 	pIdUsu INTEGER,
 	pInConfirm INTEGER,
-	pNmTimeFUT VARCHAR(50)
+	pNmTimePRO VARCHAR(50)
 )
 begin
 	DECLARE _inLastOrdenacao INTEGER DEFAULT NULL;
@@ -113,12 +303,12 @@ begin
 	IF (_inUsuarioFound = 0) THEN
 	
 		insert into TB_CONFIRMACAO_TEMPORADA (ID_TEMPORADA, ID_USUARIO, ID_CAMPEONATO, NM_TIME, IN_CONFIRMACAO, IN_ORDENACAO, DT_CONFIRMACAO, IN_CONSOLE, DS_STATUS, DS_DESCRICAO_STATUS)
-		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimeFUT, pInConfirm, _inLastOrdenacao, NOW(), 'PS4', 'AP', 'Aprovada.');
+		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimePRO, pInConfirm, _inLastOrdenacao, NOW(), 'PS4', 'AP', 'Aprovada.');
 	
 	ELSE
 	
 		update TB_CONFIRMACAO_TEMPORADA
-		set NM_TIME = pNmTimeFUT,
+		set NM_TIME = pNmTimePRO,
 		IN_CONFIRMACAO = pInConfirm,
 		DT_CONFIRMACAO = NOW()
 		where ID_TEMPORADA = pIdTemporada
@@ -545,44 +735,6 @@ DELIMITER ;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spAddDeclineConfirmacaoTemporadaRenovacao` $$
-CREATE PROCEDURE `spAddDeclineConfirmacaoTemporadaRenovacao`(
-	pIdTemporada INTEGER,
-	pIdUsu INTEGER,
-	pIdCampeonato INTEGER
-)
-begin
-	DECLARE _total INTEGER DEFAULT 0;
-	
-	select count(1) into _total
-	from TB_CONFIRMACAO_TEMPORADA
-	where ID_TEMPORADA = pIdTemporada
-	and ID_USUARIO = pIdUsu
-	and ID_CAMPEONATO = pIdCampeonato;
-	
-	IF _total > 0 THEN
-	
-		update TB_CONFIRMACAO_TEMPORADA
-		set IN_ORDENACAO = 0,
-		IN_CONFIRMACAO = 0,
-		DS_STATUS = 'AP',
-		DT_CONFIRMACAO = NOW()
-		where ID_TEMPORADA = pIdTemporada
-		and ID_USUARIO = pIdUsu
-		and ID_CAMPEONATO = pIdCampeonato;
-
-	ELSE
-	
-		insert into TB_CONFIRMACAO_TEMPORADA (ID_TEMPORADA, ID_USUARIO, ID_CAMPEONATO, IN_CONSOLE, IN_ORDENACAO, IN_CONFIRMACAO, DS_STATUS, DT_CONFIRMACAO)
-		values (pIdTemporada, pIdUsu, pIdCampeonato, 'PS4', 0, 0, 'AP', NOW());
-		
-	END IF;
-End$$
-DELIMITER ;
-
-
-
-DELIMITER $$
 DROP PROCEDURE IF EXISTS `spGetAllSquadOfClub` $$
 CREATE PROCEDURE `spGetAllSquadOfClub`(
 	pIdTemporada INTEGER,
@@ -612,5 +764,64 @@ begin
 
 	END IF;
 	
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllDetailsRenewalHome` $$
+CREATE PROCEDURE `spGetAllDetailsRenewalHome`(
+	pIdUser INTEGER
+)
+begin
+	DECLARE _temporadaID INTEGER DEFAULT 0;
+	DECLARE _confirmH2H INTEGER DEFAULT NULL;
+	DECLARE _confirmFUT INTEGER DEFAULT NULL;
+	DECLARE _nmTimeFUT VARCHAR(50) DEFAULT NULL;
+	DECLARE _confirmPRO INTEGER DEFAULT NULL;
+	DECLARE _nmTimePRO VARCHAR(50) DEFAULT NULL;
+	DECLARE _confirmWC INTEGER DEFAULT NULL;
+	DECLARE _ddd VARCHAR(2) DEFAULT NULL;
+	DECLARE _mobile VARCHAR(15) DEFAULT NULL;
+	
+	SET _temporadaID = fcGetIdTempCurrent() + 1;
+	
+	SELECT IN_CONFIRMACAO into _confirmH2H
+	FROM TB_CONFIRMACAO_TEMPORADA
+	WHERE ID_TEMPORADA = _temporadaID AND ID_CAMPEONATO IN (0,1,2,3,4) AND ID_USUARIO = pIdUser ORDER BY ID_CAMPEONATO LIMIT 1;
+	
+	SELECT IN_CONFIRMACAO, NM_TIME into _confirmFUT, _nmTimeFUT
+	FROM TB_CONFIRMACAO_TEMPORADA
+	WHERE ID_TEMPORADA = _temporadaID AND ID_CAMPEONATO IN (7,8,9) AND ID_USUARIO = pIdUser ORDER BY ID_CAMPEONATO LIMIT 1;
+	
+	SELECT IN_CONFIRMACAO, NM_TIME into _confirmPRO, _nmTimePRO
+	FROM TB_CONFIRMACAO_TEMPORADA
+	WHERE ID_TEMPORADA = _temporadaID AND ID_CAMPEONATO IN (13,14,15) AND ID_USUARIO = pIdUser ORDER BY ID_CAMPEONATO LIMIT 1;
+	
+	SELECT IN_CONFIRMACAO into _confirmWC
+	FROM TB_CONFIRMACAO_TEMPORADA
+	WHERE ID_TEMPORADA = _temporadaID AND ID_CAMPEONATO IN (5) AND ID_USUARIO = pIdUser ORDER BY ID_CAMPEONATO LIMIT 1;
+	
+	SELECT NO_DDD, NO_CELULAR into _ddd, _mobile
+	FROM TB_USUARIO WHERE ID_USUARIO = pIdUser;
+	
+	IF _nmTimeFUT IS NULL THEN
+	
+		SELECT NM_TIME into _nmTimeFUT FROM TB_TIME
+		WHERE ID_TIME = fcGetCurrentIdTimeFUT(pIdUser);
+	
+	END IF;
+	
+	IF _nmTimePRO IS NULL THEN
+	
+		SELECT NM_TIME into _nmTimePRO FROM TB_TIME
+		WHERE ID_TIME = fcGetCurrentIdTimePRO(pIdUser);
+	
+	END IF;
+		
+	SELECT COALESCE(_temporadaID, 0) as temporadaID, COALESCE(_confirmH2H, -1) as confirmH2H, COALESCE(_confirmWC, -1) as confirmWC, 
+	       COALESCE(_confirmFUT, -1) as confirmFUT,  COALESCE(_nmTimeFUT, "")  as nmTimeFUT,
+		   COALESCE(_confirmPRO, -1) as confirmPRO,  COALESCE(_nmTimePRO, "")  as nmTimePRO, 
+		   COALESCE(_ddd, "")        as ddd,         COALESCE(_mobile, "")     as mobile;
 End$$
 DELIMITER ;

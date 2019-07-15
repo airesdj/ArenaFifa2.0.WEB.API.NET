@@ -31,6 +31,8 @@ namespace ArenaFifa20.API.NET.Controllers
 
                 if (model.actionUser == "save")
                 {
+                    if (String.IsNullOrEmpty(model.confirmation)) { model.confirmation = null; }
+                    if (String.IsNullOrEmpty(model.teamName)) { model.teamName = null; }
                     paramName = new string[] { "pIdTemporada", "pIdCampeonato", "pIdUsu", "pInConfirm", "pInOrdernacao", "pNmTimeFUT" };
                     paramValue = new string[] { Convert.ToString(model.seasonID), Convert.ToString(model.championshipID), Convert.ToString(model.userID), model.confirmation, model.ordering, model.teamName };
                     dt = db.executePROC("spAddUpdateConfirmacaoTemporada", paramName, paramValue);

@@ -431,7 +431,6 @@ End$$
 DELIMITER ;
 
 
-
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddUpdateConfirmacaoTemporada` $$
 CREATE PROCEDURE `spAddUpdateConfirmacaoTemporada`(
@@ -445,6 +444,7 @@ CREATE PROCEDURE `spAddUpdateConfirmacaoTemporada`(
 begin
 	DECLARE _inLastOrdenacao INTEGER DEFAULT NULL;
 	DECLARE _inUsuarioFound INTEGER DEFAULT 0;
+	DECLARE _inConfirmDate DATETIME DEFAULT NULL;
 
 	IF pIdTemporada = 0 THEN
 		SET pIdTemporada = fcGetIdTempCurrent() + 1;
@@ -481,17 +481,25 @@ begin
 	and ID_CAMPEONATO = pIdCampeonato
 	and ID_USUARIO = pIdUsu;
 	
+	
+	IF pInConfirm >= 0 THEN
+		SET _inConfirmDate = CURRENT_DATE();
+    ELSE
+		SET _inConfirmDate = NULL;
+		SET _inLastOrdenacao = 0;
+	END IF;
+	
 	IF (_inUsuarioFound = 0) THEN
 	
 		insert into TB_CONFIRMACAO_TEMPORADA (ID_TEMPORADA, ID_CAMPEONATO, ID_USUARIO, NM_TIME, IN_CONFIRMACAO, IN_ORDENACAO, DT_CONFIRMACAO, IN_CONSOLE, DS_STATUS, DS_DESCRICAO_STATUS)
-		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimeFUT, pInConfirm, _inLastOrdenacao, CURRENT_DATE(), 'PS4', 'AP', 'Aprovada.');
+		values (pIdTemporada, pIdCampeonato, pIdUsu, pNmTimeFUT, pInConfirm, _inLastOrdenacao, _inConfirmDate, 'PS4', 'AP', 'Aprovada.');
 	
 	ELSE
 	
 		update TB_CONFIRMACAO_TEMPORADA
 		set NM_TIME = pNmTimeFUT,
 		IN_CONFIRMACAO = pInConfirm,
-		DT_CONFIRMACAO = CURRENT_DATE(),
+		DT_CONFIRMACAO = _inConfirmDate,
 		IN_ORDENACAO = _inLastOrdenacao
 		where ID_TEMPORADA = pIdTemporada
 		and ID_USUARIO = pIdUsu
@@ -500,7 +508,6 @@ begin
 	END IF;
 End$$
 DELIMITER ;
-
 
 
 DELIMITER $$
