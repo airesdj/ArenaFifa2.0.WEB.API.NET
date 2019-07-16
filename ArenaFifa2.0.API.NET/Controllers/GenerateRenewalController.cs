@@ -167,7 +167,6 @@ namespace ArenaFifa20.API.NET.Controllers
             }
             catch (Exception ex)
             {
-                model = new GenerateRenewalViewModel();
                 model.returnMessage = "error_" + ex.Message;
                 return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
             }

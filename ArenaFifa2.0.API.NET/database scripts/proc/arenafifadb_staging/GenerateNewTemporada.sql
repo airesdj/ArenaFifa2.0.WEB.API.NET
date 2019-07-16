@@ -1237,3 +1237,183 @@ Begin
 
 End$$
 DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllSeasonDetailsNewTemporada` $$
+CREATE PROCEDURE `spGetAllSeasonDetailsNewTemporada`()
+Begin
+	SELECT * FROM TB_GENERATE_NEWSEASON_MAINDETAILS WHERE IN_TEMPORADA_ATIVA = TRUE;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllChampionshipTypesNewTemporadaByMode` $$
+CREATE PROCEDURE `spGetAllChampionshipTypesNewTemporadaByMode`(
+	pTpModalidade CHAR(3)
+)
+Begin
+	SELECT IN_CAMPEONATO_ATIVO, SG_CAMPEONATO FROM TB_GENERATE_NEWSEASON_CHAMPIONSHIPLEAGUE_DETAILS 
+	 WHERE TP_MODALIDADE = pTpModalidade
+	 GROUP BY SG_CAMPEONATO
+	UNION ALL
+    SELECT IN_CAMPEONATO_ATIVO, SG_CAMPEONATO FROM TB_GENERATE_NEWSEASON_CHAMPIONSHIPCUP_DETAILS 
+	 WHERE TP_MODALIDADE = pTpModalidade
+	 GROUP BY IN_CAMPEONATO_ATIVO, SG_CAMPEONATO
+	 ORDER BY IN_CAMPEONATO_ATIVO DESC, SG_CAMPEONATO;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllChampionshipLeagueDetailsNewTemporada` $$
+CREATE PROCEDURE `spGetAllChampionshipLeagueDetailsNewTemporada`(
+	pTpModalidade CHAR(3),
+	pSgCampeonato CHAR(7)
+)
+Begin
+	SELECT * FROM TB_GENERATE_NEWSEASON_CHAMPIONSHIPLEAGUE_DETAILS 
+	 WHERE TP_MODALIDADE = pTpModalidade AND SG_CAMPEONATO = pSgCampeonato;
+End$$
+DELIMITER ;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllChampionshipCupDetailsNewTemporada` $$
+CREATE PROCEDURE `spGetAllChampionshipCupDetailsNewTemporada`(
+	pTpModalidade CHAR(3),
+	pSgCampeonato CHAR(7)
+)
+Begin
+	SELECT * FROM TB_GENERATE_NEWSEASON_CHAMPIONSHIPCUP_DETAILS 
+	 WHERE TP_MODALIDADE = pTpModalidade AND SG_CAMPEONATO = pSgCampeonato;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllChampionshipItensNewTemporadaByTipoCampeonato` $$
+CREATE PROCEDURE `spGetAllChampionshipItensNewTemporadaByTipoCampeonato`(
+	pTpModalidade CHAR(3),
+	pSgCampeonato CHAR(7)
+)
+Begin
+	SELECT * FROM TB_GENERATE_NEWSEASON_ITEM_STANDARD 
+	 WHERE TP_MODALIDADE = pTpModalidade AND SG_CAMPEONATO = pSgCampeonato
+	 ORDER BY TP_MODALIDADE, SG_CAMPEONATO, ITEM_POTE_NUMBER, ITEM_NAME;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllChampionshipItensNewTemporadaByModalidade` $$
+CREATE PROCEDURE `spGetAllChampionshipItensNewTemporadaByModalidade`(
+	pTpModalidade CHAR(3)
+)
+Begin
+	SELECT * FROM TB_GENERATE_NEWSEASON_ITEM_STANDARD 
+	 WHERE TP_MODALIDADE = pTpModalidade
+	 ORDER BY TP_MODALIDADE, SG_CAMPEONATO, ITEM_POTE_NUMBER, ITEM_NAME;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spAddUpdateSeasonGenerateNewSeason` $$
+CREATE PROCEDURE `spAddUpdateSeasonGenerateNewSeason`(
+	pIdTemporada INTEGER,
+	pNmTemporada VARCHAR(50),
+	pIdUsu INTEGER,
+	pNmUsu VARCHAR(50),
+	pPsnID VARCHAR(30),
+	pDtSorteio DATE
+)
+Begin
+	IF pIdTemporada = 0 THEN
+	
+		SELECT ID_TEMPORADA into pIdTemporada FROM TB_GENERATE_NEWSEASON_MAINDETAILS
+		WHERE IN_TEMPORADA_ATIVA IS NULL ORDER BY ID_TEMPORADA DESC LIMIT 1;
+		
+		UPDATE TB_GENERATE_NEWSEASON_MAINDETAILS SET IN_TEMPORADA_ATIVA = FALSE
+		WHERE ID_TEMPORADA = pIdTemporada;
+		
+		SET pIdTemporada = pIdTemporada + 1;
+		
+		INSERT INTO TB_GENERATE_NEWSEASON_MAINDETAILS VALUES (pIdTemporada, CONCAT((pIdTemporada-1), "ª Temporada"), pIdUsu, pNmUsu, pPsnID, pDtSorteio, TRUE);
+	
+	ELSE
+	
+		UPDATE TB_GENERATE_NEWSEASON_MAINDETAILS
+		SET DATA_SORTEIO = pDtSorteio, ID_USUARIO = pIdUsu, NM_USUARIO = pNmUsu, PSN_ID = pPsnID
+		WHERE ID_TEMPORADA = pIdTemporada;
+	
+	END IF;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spUpdateChampionshipLeagueGenerateNewSeason` $$
+CREATE PROCEDURE `spUpdateChampionshipLeagueGenerateNewSeason`(
+	pTpModalidade CHAR(3),
+	pSgCampeonato CHAR(7),
+	pDtInicio DATE,
+	pQtTimes INTEGER,
+	pQtDiasFase0 INTEGER,
+	pQtDiasPlayoff INTEGER,
+	pQtTimesRebaixados INTEGER,
+	pInAtivo TINYINT,
+	pInPorGrupo TINYINT,
+	pQtGrupos INTEGER,
+	pInPorPotes TINYINT,
+	pInDoubleRound TINYINT
+)
+Begin
+		UPDATE TB_GENERATE_NEWSEASON_CHAMPIONSHIPLEAGUE_DETAILS
+		SET DATA_INICIO = pDtInicio, QT_TIMES = pQtTimes, DIAS_FASE_CLASSIFICACAO = pQtDiasFase0, DIAS_FASE_PLAYOFF = pQtDiasPlayoff, QT_TIMES_REBAIXADOS = pQtTimesRebaixados,
+		    IN_CAMPEONATO_ATIVO = pInAtivo, IN_CAMPEONATO_GRUPO = pInPorGrupo, QT_GRUPOS = pQtGrupos, IN_CAMPEONATO_GRUPO_POR_POTES = pInPorPotes, IN_DOUBLE_ROUND = pInDoubleRound
+		WHERE TP_MODALIDADE = pTpModalidade AND SG_CAMPEONATO = pSgCampeonato;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spUpdateChampionshipCupGenerateNewSeason` $$
+CREATE PROCEDURE `spUpdateChampionshipCupGenerateNewSeason`(
+	pTpModalidade CHAR(3),
+	pSgCampeonato CHAR(7),
+	pDtInicio DATE,
+	pQtTimes INTEGER,
+	pQtDiasFase0 INTEGER,
+	pQtDiasPlayoff INTEGER,
+	pInAtivo TINYINT,
+	pInPorGrupo TINYINT,
+	pQtGrupos INTEGER,
+	pInPorPotes TINYINT,
+	pInDestino TINYINT,
+	pInOrigem TINYINT,
+	pInSerieA TINYINT,
+	pInSerieB TINYINT,
+	pInSerieC TINYINT,
+	pInSerieA_B TINYINT,
+	pInSerieA_B_C TINYINT,
+	pInSerieA_B_C_D TINYINT,
+	pInSelecao TINYINT
+)
+Begin
+		UPDATE TB_GENERATE_NEWSEASON_CHAMPIONSHIPCUP_DETAILS
+		SET DATA_INICIO = pDtInicio, QT_TIMES = pQtTimes, DIAS_FASE_CLASSIFICACAO = pQtDiasFase0, DIAS_FASE_PLAYOFF = pQtDiasPlayoff,
+		    IN_CAMPEONATO_ATIVO = pInAtivo, IN_CAMPEONATO_GRUPO = pInPorGrupo, QT_GRUPOS = pQtGrupos, IN_CAMPEONATO_GRUPO_POR_POTES = pInPorPotes,
+			IN_CAMPEONATO_DESTINO = pInDestino, IN_CAMPEONATO_ORIGEM = pInOrigem, IN_APENAS_SERIEA = pInSerieA, IN_APENAS_SERIEB = pInSerieB, 
+			IN_APENAS_SERIEC = pInSerieC, IN_SERIEA_B = pInSerieA_B, IN_SERIEA_B_C = pInSerieA_B_C, IN_SERIEA_B_C_D = pInSerieA_B_C_D, IN_SELECAO = pInSelecao
+		WHERE TP_MODALIDADE = pTpModalidade AND SG_CAMPEONATO = pSgCampeonato;
+End$$
+DELIMITER ;
+

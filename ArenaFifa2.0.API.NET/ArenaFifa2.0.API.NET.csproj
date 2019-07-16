@@ -47,7 +47,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\fifa2.0\ArenaFifa2.0\Source\Commons\bin\Release\Commons.dll</HintPath>
     </Reference>
-    <Reference Include="DBConnection">
+    <Reference Include="DBConnection, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\fifa2.0\ArenaFifa2.0\Source\DBConnection\bin\Release\DBConnection.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
@@ -194,6 +195,7 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Controllers\CurrentSeasonController.cs" />
+    <Compile Include="Controllers\GenerateNewSeasonController.cs" />
     <Compile Include="Controllers\GenerateRenewalController.cs" />
     <Compile Include="Controllers\MyMatchesController.cs" />
     <Compile Include="Controllers\SpoolerController.cs" />

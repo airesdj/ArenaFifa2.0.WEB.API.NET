@@ -39,15 +39,6 @@ namespace ArenaFifa20.API.NET.Controllers
                     model.returnMessage = "ModeratorSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
-                else if (model.actionUser.ToLower() == "dellcrud")
-                {
-                    paramName = new string[] { "pIdUsuario", "pIdUsuarioOperacao", "pPsnUsuarioOperacao", "pDsPaginaOperacao" };
-                    paramValue = new string[] { Convert.ToString(model.id), Convert.ToString(model.idOperator), model.psnIDOperator, model.pageName };
-                    dt = db.executePROC("spDeleteUsuario", paramName, paramValue);
-
-                    model.returnMessage = "ModeratorSuccessfully";
-                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
-                }
                 else if (model.actionUser.ToLower() == "save" && model.id > 0)
                 {
                     paramName = new string[] { "pIdUsuario", "pdsPsn", "pNmUsuario", "pDsEmail" };
