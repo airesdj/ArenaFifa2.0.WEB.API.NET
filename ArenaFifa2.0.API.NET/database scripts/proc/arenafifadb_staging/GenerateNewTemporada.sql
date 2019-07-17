@@ -1417,3 +1417,77 @@ Begin
 End$$
 DELIMITER ;
 
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spAddTeamGenerateNewSeason` $$
+CREATE PROCEDURE `spAddTeamGenerateNewSeason`(
+	pTpModalidade CHAR(3),
+	pSgCampeonato CHAR(7),
+	pIdStandard INTEGER,
+	pIdItem INTEGER,
+	pIdNumPote INTEGER
+)
+Begin
+	DECLARE _nmItem VARCHAR(50) DEFAULT NULL;
+	DECLARE _psnID VARCHAR(30) DEFAULT NULL;
+	DECLARE _userID INTEGER DEFAULT NULL;
+	DECLARE _typeID INTEGER DEFAULT NULL;
+	
+	IF pIdStandard = 1 THEN
+	
+		SELECT NM_TIME, ID_TECNICO_FUT, ID_TIPO_TIME into _nmItem, _userID, _typeID FROM TB_TIME WHERE ID_TIME = pIdItem;
+		
+		IF _typeID = 37 OR _typeID = 42 THEN
+		
+			IF COALESCE(_userID, 0) > 0 THEN
+			
+				SELECT PSN_ID into _psnID FROM TB_USUARIO WHERE ID_USUARIO = _userID;
+		
+			END IF;
+
+		END IF;
+	
+	ELSE
+	
+		SELECT NM_USUARIO, PSN_ID into _nmItem, _psnID FROM TB_USUARIO WHERE ID_USUARIO = pIdItem;
+	
+	END IF;
+
+	INSERT INTO TB_GENERATE_NEWSEASON_ITEM_STANDARD
+	VALUES (pTpModalidade, pSgCampeonato, pIdStandard, pIdItem, _nmItem, _psnID, pIdNumPote);
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spDeleteTeamGenerateNewSeason` $$
+CREATE PROCEDURE `spDeleteTeamGenerateNewSeason`(
+	pTpModalidade CHAR(3),
+	pSgCampeonato CHAR(7),
+	pIdStandard INTEGER,
+	pIdItem INTEGER,
+	pNmItem VARCHAR(50)
+)
+Begin
+	DELETE FROM TB_GENERATE_NEWSEASON_ITEM_STANDARD
+	WHERE TP_MODALIDADE = pTpModalidade AND SG_CAMPEONATO = pSgCampeonato 
+	  AND ID_STANDARD = pIdStandard AND ITEM_ID = pIdItem AND ITEM_NAME = pNmItem;
+End$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `spGetAllTeamGenerateNewSeasonH2H` $$
+CREATE PROCEDURE `spGetAllTeamGenerateNewSeasonH2H`()
+Begin
+	SELECT ID_TIME, NM_TIME, DS_TIPO
+	FROM TB_TIME 
+	WHERE ID_TIME NOT IN (SELECT ITEM_ID FROM TB_GENERATE_NEWSEASON_ITEM_STANDARD WHERE TP_MODALIDADE = 'H2H')
+	  AND ID_TIPO_TIME NOT IN (37,38,40,41,42)
+	ORDER BY NM_TIME;
+End$$
+DELIMITER ;

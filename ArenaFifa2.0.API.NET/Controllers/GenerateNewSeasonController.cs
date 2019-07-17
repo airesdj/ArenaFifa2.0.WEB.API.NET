@@ -19,7 +19,6 @@ namespace ArenaFifa20.API.NET.Controllers
         public IHttpActionResult getPost(GenerateNewSeasonDetailsModel model)
         {
             db.openConnection(GlobalVariables.DATABASE_NAME_STAGING);
-            GenerateNewSeasonStandardDetailsModel modelItemDetails = null;
             StandardGenerateNewSeasonChampionshipLeagueDetailsModel modelLeague = null;
             StandardGenerateNewSeasonChampionshipCupDetailsModel modelCup = null;
             DataTable dt = null;
@@ -61,20 +60,8 @@ namespace ArenaFifa20.API.NET.Controllers
                             model.listChampionshipCupDetails.Add(getDetailsChampionshipCup(model.modeType, dt.Rows[i]["SG_CAMPEONATO"].ToString()));
                     }
 
-                    paramName = new string[] { "pTpModalidade" };
-                    paramValue = new string[] { model.modeType };
-                    dt = db.executePROC("spGetAllChampionshipItensNewTemporadaByModalidade", paramName, paramValue);
+                    getAllTeamToTheMainModel(ref model);
 
-                    for (j = 0; j < dt.Rows.Count; j++)
-                    {
-                        modelItemDetails = new GenerateNewSeasonStandardDetailsModel();
-                        modelItemDetails.typeItem = Convert.ToInt16(dt.Rows[j]["ID_STANDARD"].ToString());
-                        modelItemDetails.id = Convert.ToInt32(dt.Rows[j]["ITEM_ID"].ToString());
-                        modelItemDetails.name = dt.Rows[j]["ITEM_NAME"].ToString();
-                        modelItemDetails.psnID = dt.Rows[j]["ITEM_PSN"].ToString();
-                        modelItemDetails.poteNumber = Convert.ToInt16(dt.Rows[j]["ITEM_POTE_NUMBER"].ToString());
-                        model.listOfTeams.Add(modelItemDetails);
-                    }
                     model.returnMessage = "GenerateNewSeasonSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
@@ -108,7 +95,6 @@ namespace ArenaFifa20.API.NET.Controllers
                 }
                 else if (model.actionUser == "saveChampionshipsCupDetails")
                 {
-
                     for (i = 0; i < model.listChampionshipCupDetails.Count; i++)
                     {
                         modelCup = model.listChampionshipCupDetails[i];
@@ -139,6 +125,30 @@ namespace ArenaFifa20.API.NET.Controllers
                     model.returnMessage = "GenerateNewSeasonSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
+                else if (model.actionUser == "addTeam")
+                {
+                    paramName = new string[] { "pTpModalidade", "pSgCampeonato", "pIdStandard", "pIdItem", "pIdNumPote" };
+                    paramValue = new string[] { model.modeType, model.championshipType, GlobalVariables.GENERATE_NEWSEASON_ITEM_TYPE_TEAM.ToString(),
+                                                model.itemID.ToString(), model.poteNumber.ToString() };
+                    db.executePROCNonResult("spAddTeamGenerateNewSeason", paramName, paramValue);
+
+                    getAllTeamToTheMainModel(ref model);
+
+                    model.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
+                else if (model.actionUser == "delTeam")
+                {
+                    paramName = new string[] { "pTpModalidade", "pSgCampeonato", "pIdStandard", "pIdItem", "pNmItem" };
+                    paramValue = new string[] { model.modeType, model.championshipType, GlobalVariables.GENERATE_NEWSEASON_ITEM_TYPE_TEAM.ToString(),
+                                                model.itemID.ToString(), model.itemName };
+                    db.executePROCNonResult("spDeleteTeamGenerateNewSeason", paramName, paramValue);
+
+                    getAllTeamToTheMainModel(ref model);
+
+                    model.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                }
                 else
                 {
                     return StatusCode(HttpStatusCode.NotAcceptable);
@@ -154,11 +164,64 @@ namespace ArenaFifa20.API.NET.Controllers
             {
                 db.closeConnection();
                 dt = null;
-                modelItemDetails = null;
                 modelLeague = null;
                 modelCup = null;
             }
 
+        }
+
+        private void getAllTeamToTheMainModel(ref GenerateNewSeasonDetailsModel model)
+        {
+            GenerateNewSeasonStandardDetailsModel modelItemDetails = null;
+            DataTable dt = null;
+            int j = 0;
+
+            try
+            {
+                model.listOfTeams = new List<GenerateNewSeasonStandardDetailsModel>();
+                paramName = new string[] { "pTpModalidade" };
+                paramValue = new string[] { model.modeType };
+                dt = db.executePROC("spGetAllChampionshipItensNewTemporadaByModalidade", paramName, paramValue);
+
+                for (j = 0; j < dt.Rows.Count; j++)
+                {
+                    modelItemDetails = new GenerateNewSeasonStandardDetailsModel();
+                    modelItemDetails.modeType = dt.Rows[j]["TP_MODALIDADE"].ToString();
+                    modelItemDetails.championshipType = dt.Rows[j]["SG_CAMPEONATO"].ToString();
+                    modelItemDetails.typeStandard = Convert.ToInt16(dt.Rows[j]["ID_STANDARD"].ToString());
+                    modelItemDetails.id = Convert.ToInt32(dt.Rows[j]["ITEM_ID"].ToString());
+                    modelItemDetails.name = dt.Rows[j]["ITEM_NAME"].ToString();
+                    modelItemDetails.psnID = dt.Rows[j]["ITEM_PSN"].ToString();
+                    modelItemDetails.poteNumber = Convert.ToInt16(dt.Rows[j]["ITEM_POTE_NUMBER"].ToString());
+                    model.listOfTeams.Add(modelItemDetails);
+                }
+
+                if (model.modeType == "H2H")
+                {
+                    paramName = new string[] { };
+                    paramValue = new string[] { };
+                    dt = db.executePROC("spGetAllTeamGenerateNewSeasonH2H", paramName, paramValue);
+
+                    for (j = 0; j < dt.Rows.Count; j++)
+                    {
+                        modelItemDetails = new GenerateNewSeasonStandardDetailsModel();
+                        modelItemDetails.id = Convert.ToInt32(dt.Rows[j]["ID_TIME"].ToString());
+                        modelItemDetails.name = dt.Rows[j]["NM_TIME"].ToString();
+                        modelItemDetails.typeItem = dt.Rows[j]["DS_TIPO"].ToString();
+                        model.listOfTeams.Add(modelItemDetails);
+                    }
+
+                }
+
+            }
+            catch
+            {
+            }
+            finally
+            {
+                modelItemDetails = null;
+                dt = null;
+            }
         }
 
         private StandardGenerateNewSeasonChampionshipLeagueDetailsModel getDetailsChampionshipLeague(string modeType, string championshipType)
