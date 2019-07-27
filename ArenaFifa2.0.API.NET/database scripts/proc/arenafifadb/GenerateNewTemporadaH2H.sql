@@ -1,20 +1,23 @@
-USE `arenafifadb`;
+USE `arenafifadb_staging`;
 
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `spCalculateEndOfTemporadaH2H` $$
-CREATE PROCEDURE `spCalculateEndOfTemporadaH2H`(pIdTemp INTEGER, pDataInicio DATE)
+CREATE PROCEDURE `spCalculateEndOfTemporadaH2H`(pIdTemp INTEGER)
 Begin
 	DECLARE _idNewTemp INTEGER DEFAULT NULL;
+	DECLARE _nameNewTemp VARCHAR(50) DEFAULT NULL;
 
 	UPDATE TB_CAMPEONATO SET IN_CAMPEONATO_ATIVO = FALSE 
 	WHERE SG_TIPO_CAMPEONATO IN ("DIV1", "DIV2", "DIV3", "DIV4", "CPGL", "CPSA", "MDCL", "CPDM", "ERCP") AND IN_CAMPEONATO_ATIVO = TRUE;
 	
-	SET _idNewTemp = spAddNewTemporadaByFimOldOne(CONCAT(pIdTemp, " º Temporada"), pDataInicio);
+	SET _nameNewTemp = CONCAT(pIdTemp, " º Temporada");
+	
+	SET _idNewTemp = spAddNewTemporadaByFimOldOne(_nameNewTemp, pDataInicio);
 	
 	call `arenafifadb`.`spCalculateAllFasesEndOfTemporadaH2H`(pIdTemp, _idNewTemp);
 	
-	SELECT _idNewTemp as NewTemporada;
+	SELECT _idNewTemp as NewTemporadaID, _nameNewTemp as NewTemporadaName;
 
 End$$
 DELIMITER ;
@@ -25,8 +28,8 @@ DROP PROCEDURE IF EXISTS `spCalculateAllFasesEndOfTemporadaH2H` $$
 CREATE PROCEDURE `spCalculateAllFasesEndOfTemporadaH2H`(pIdTemp INTEGER, pIdTempNew INTEGER)
 Begin
 	DECLARE _finished INTEGER DEFAULT 0;
-	DECLARE _sgCampLessH2H VARCHAR(50) DEFAULT "'CDA', 'LFUT','FUT1','FUT2','CFUT', 'PRO1','PRO2','CPRO'";
-	DECLARE _sgLigasH2H VARCHAR(50) DEFAULT "'DIV1', 'DIV2','DIV3','DIV4'";
+	DECLARE _sgCampLessH2H VARCHAR(50) DEFAULT "CDA,LFUT,FUT1,FUT2,CFUT,PRO1,PRO2,CPRO";
+	DECLARE _sgLigasH2H VARCHAR(50) DEFAULT "DIV1,DIV2,DIV3,DIV4";
 	DECLARE _sgCamp VARCHAR(4) DEFAULT NULL;
 	DECLARE _count INTEGER DEFAULT 0;
 	DECLARE _idCamp INTEGER DEFAULT 0;
@@ -50,7 +53,7 @@ Begin
 		FROM TB_TABELA_JOGO J, TB_TIME T1 , TB_TIME T2, TB_USUARIO TU1, TB_USUARIO TU2, TB_CLASSIFICACAO TC1, TB_CLASSIFICACAO TC2, TB_CAMPEONATO C 
 		WHERE C.ID_TEMPORADA = pIdTemp
 		AND J.ID_FASE = 0
-		AND C.SG_TIPO_CAMPEONATO NOT IN (_sgCampLessH2H)
+		AND FIND_IN_SET(SG_TIPO_CAMPEONATO,_sgCampLessH2H) = 0
 		AND C.ID_CAMPEONATO = J.ID_CAMPEONATO 
 		AND C.ID_CAMPEONATO = TC1.ID_CAMPEONATO 
 		AND C.ID_CAMPEONATO = TC2.ID_CAMPEONATO 
@@ -96,7 +99,7 @@ Begin
 		
 		SELECT count(1) into _count FROM TB_HISTORICO_TEMPORADA WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _idUsuHome;
 		IF _count = 0 THEN
-			call `arenafifadb`.`spAddHistoricoTemporadaH2H`(pIdTemp, _idUsuHome, NULL);
+			call spAddHistoricoTemporadaH2H(pIdTemp, _idUsuHome, NULL);
 		END IF;
 	
 		SET _sumPoints = 0;
@@ -114,7 +117,7 @@ Begin
 		SET _sumLiga = 0;
 		SET _sumCopa = 0;
 		
-		IF _sgCamp IN (_sgLigasH2H) THEN
+		IF INSTR(_sgLigasH2H,_sgCamp)> 0 THEN
 			SET _sumLiga = _sumPoints;
 		ELSE
 			SET _sumCopa = _sumPoints;
@@ -130,7 +133,7 @@ Begin
 
 		SELECT count(1) into _count FROM TB_HISTORICO_TEMPORADA WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _idUsuAway;
 		IF _count = 0 THEN
-			call `arenafifadb`.`spAddHistoricoTemporadaH2H`(pIdTemp, _idUsuAway, NULL);
+			call spAddHistoricoTemporadaH2H(pIdTemp, _idUsuAway, NULL);
 		END IF;
 		
 		SET _sumPoints = 0;
@@ -148,7 +151,7 @@ Begin
 		SET _sumLiga = 0;
 		SET _sumCopa = 0;
 		
-		IF _sgCamp IN (_sgLigasH2H) THEN
+		IF INSTR(_sgLigasH2H,_sgCamp)> 0 THEN
 			SET _sumLiga = _sumPoints;
 		ELSE
 			SET _sumCopa = _sumPoints;
@@ -227,7 +230,7 @@ Begin
 			SET _idCampAux = _idCamp;
 		END IF;
 		
-		SELECT ID_FASE into _idNextFase FROM TB_FASE_CAMPEONATO WHERE ID_CAMPEONATO = pIdCamp AND AND ID_FASE > 0 ORDER BY IN_ORDENACAO LIMIT 1;
+		SELECT ID_FASE into _idNextFase FROM TB_FASE_CAMPEONATO WHERE ID_CAMPEONATO = pIdCamp AND ID_FASE > 0 ORDER BY IN_ORDENACAO LIMIT 1;
 		
 		#Calculando passagens para a próxima fase....
 		call `arenafifadb`.`spCalculatePassNextFaseH2H`(_idCamp, _sgCamp, _idNextFase, _ptsCalssifFase2, pSgLigas);
@@ -274,7 +277,7 @@ Begin
 	    PT_TOTAL_TEMPORADA = (PT_LIGAS+PT_COPAS)
 	WHERE ID_TEMPORADA = pIdTemp;
 	
-	SELECT ID_TEMPORADA into _idPreviousTemp FROM FROM TB_HISTORICO_TEMPORADA  WHERE ID_TEMPORADA < pIdTemp ORDER BY ID_TEMPORADA DESC LIMIT 1;
+	SELECT ID_TEMPORADA into _idPreviousTemp FROM TB_HISTORICO_TEMPORADA  WHERE ID_TEMPORADA < pIdTemp ORDER BY ID_TEMPORADA DESC LIMIT 1;
 	
 	#Atualizando Aproveitamento dos técnicos....
 	call `arenafifadb`.`spPrepareToCalculatePerformanceTecnicosH2H`(pIdTemp, _idPreviousTemp, pSgLigas);
@@ -374,7 +377,7 @@ Begin
 		SELECT PT_TOTAL, PC_APROVEITAMENTO_GERAL, QT_LSTNEGRA into _total, _apGeral, _totLstNegra
 		FROM TB_HISTORICO_TEMPORADA WHERE ID_TEMPORADA = _idTemp AND ID_USUARIO = _idUsu;
 		
-		call `arenafifadb`.`spAddHistoricoTemporadaH2H`(pIdTemp, _idUsu, 0);
+		call spAddHistoricoTemporadaH2H(pIdTemp, _idUsu, 0);
 		
 		IF (_total IS NOT NULL) THEN
 			UPDATE TB_HISTORICO_TEMPORADA
@@ -546,7 +549,7 @@ Begin
 		
 		END IF;
 		
-		SELECT PT_TOTAL into  FROM TB_LISTA_NEGRA 
+		SELECT PT_TOTAL into _qtLstNegra FROM TB_LISTA_NEGRA 
 		WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _IdUsu;
 		
 		IF _qtLstNegra IS NULL THEN
@@ -731,7 +734,7 @@ Begin
 	DECLARE _sumCopa INTEGER DEFAULT 0;
 
 	DECLARE tabela_cursor CURSOR FOR
-		SELECT TU1.ID_USUARIO as IDUSU1, TU2.ID_USUARIO as IDUSU2
+		SELECT TU1.ID_USUARIO, TU2.ID_USUARIO
 		 FROM TB_TABELA_JOGO J, TB_USUARIO TU1, TB_USUARIO TU2
 		 WHERE J.ID_CAMPEONATO =  pIdCamp
 		 AND J.ID_FASE = pIdNextFase
@@ -739,7 +742,7 @@ Begin
 		 AND J.DT_EFETIVACAO_JOGO IS NOT NULL
 		 AND J.ID_USUARIO_TIME_CASA = TU1.ID_USUARIO
 		 AND J.ID_USUARIO_TIME_VISITANTE = TU2.ID_USUARIO
-		 ORDER BY ORDER BY J.DT_TABELA_INICIO_JOGO, J.DS_HORA_JOGO, J.ID_TABELA_JOGO;
+		 ORDER BY J.DT_TABELA_INICIO_JOGO, J.DS_HORA_JOGO, J.ID_TABELA_JOGO;
  
 	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
 	
@@ -785,7 +788,7 @@ CREATE PROCEDURE `spCalculateChampionAndViceH2H`(
 	pSgCamp VARCHAR(4), 
 	pPtsChampion INTEGER, 
 	pPtsVice INTEGER, 
-	pSgLigas VARCHAR(50)
+	pSgLigas VARCHAR(50),
 	pInIdaEVolta INTEGER,
 	pNumRodadas VARCHAR(5)
 )
@@ -805,7 +808,7 @@ Begin
 	DECLARE _sumGolsAwayTime2 INTEGER DEFAULT 0;
 
 	DECLARE tabela_cursor CURSOR FOR
-		SELECT TU1.ID_USUARIO as IDUSU1, TU2.ID_USUARIO as IDUSU2, J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, J.ID_TIME_CASA, J.ID_TIME_VISITANTE
+		SELECT TU1.ID_USUARIO, TU2.ID_USUARIO, J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, J.ID_TIME_CASA, J.ID_TIME_VISITANTE
 		 FROM TB_TABELA_JOGO J, TB_USUARIO TU1, TB_USUARIO TU2
 		 WHERE J.ID_CAMPEONATO =  pIdCamp
 		 AND J.ID_FASE = pIdNextFase
@@ -813,7 +816,7 @@ Begin
 		 AND J.DT_EFETIVACAO_JOGO IS NOT NULL
 		 AND J.ID_USUARIO_TIME_CASA = TU1.ID_USUARIO
 		 AND J.ID_USUARIO_TIME_VISITANTE = TU2.ID_USUARIO
-		 ORDER BY ORDER BY J.IN_JOGO_MATAXMATA, J.IN_NUMERO_RODADA, J.DT_TABELA_INICIO_JOGO, J.DS_HORA_JOGO, J.ID_TABELA_JOGO;
+		 ORDER BY J.IN_JOGO_MATAXMATA, J.IN_NUMERO_RODADA, J.DT_TABELA_INICIO_JOGO, J.DS_HORA_JOGO, J.ID_TABELA_JOGO;
  
 	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
 	
@@ -1122,75 +1125,6 @@ DELIMITER ;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spGenerateCampeonatoLigaH2H` $$
-CREATE PROCEDURE `spGenerateCampeonatoLigaH2H`(
-	pIdTemp INTEGER,
-	pTpCamp VARCHAR(4),
-	pDtInicio DATE,
-	pDtSorteio DATE,
-	pNmCamp VARCHAR(50),
-	pQtTimesAcesso INTEGER,
-	pQtTimesRebaix INTEGER,
-	pQtTimes INTEGER,
-	pQtDiasClassif INTEGER,
-	pQtDiasPlayoff INTEGER,
-	pListaTimes VARCHAR(500)
-)
-Begin
-	DECLARE _idCamp INTEGER DEFAULT NULL;
-	DECLARE _idTime INTEGER DEFAULT NULL;
-	DECLARE _finished INTEGER DEFAULT 0;
-	
-	DECLARE tabela_cursor CURSOR FOR 
-	SELECT ID_TIME FROM TB_TIME WHERE NM_TIME IN (pListaTimes) AND DS_TIPO NOT IN('FUT','PRO') ORDER BY NM_TIME;
-	
-	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
-
-	SET _idCamp = fcAddNovoCampeonato(pIdTemp, pTpCamp, FALSE);
-	
-	IF (_idCamp>0) THEN
-	
-		UPDATE TB_CAMPEONATO
-		SET NM_CAMPEONATO = pNmCamp,
-		    DT_INICIO = pDtInicio,
-			DT_SORTEIO = pDtSorteio,
-			QT_DIAS_PARTIDA_FASE_MATAxMATA = pQtDiasPlayoff,
-			QT_TIMES_ACESSO = pQtTimesAcesso,
-			QT_DIAS_PARTIDA_CLASSIFICACAO = pQtDiasClassif,
-			QT_TIMES = pQtTimes,
-			QT_TIMES_REBAIXADOS = pQtTimesRebaix,
-			IN_DISPUTA_3o_4o_Lugar = FALSE
-		WHERE ID_CAMPEONATO = _idCamp;
-		
-		DELETE FROM TB_CAMPEONATO_TIME WHERE ID_CAMPEONATO = _idCamp;
-	
-		OPEN tabela_cursor;
-		
-		get_tabela: LOOP
-		
-			FETCH tabela_cursor INTO _idTime;
-			
-			IF _finished = 1 THEN
-				LEAVE get_tabela;
-			END IF;
-
-			INSERT INTO TB_CAMPEONATO_TIME (ID_CAMPEONATO, ID_TIME) VALUES (_idCamp, _idTime);
-			
-		END LOOP get_tabela;
-		
-		CLOSE tabela_cursor;
-		
-		
-		call `arenafifadb`.`spAddLoadClassificacaoInitialOfCampeonatov2`(_idCamp);
-
-	END IF;
-
-	SELECT _idCamp as idNewCampeonato;
-	
-End$$
-DELIMITER ;
-
-DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddListaTimesPreCopaH2H` $$
 CREATE PROCEDURE `spAddListaTimesPreCopaH2H`(
 	pIdCampCopa INTEGER,
@@ -1201,8 +1135,11 @@ Begin
 	DECLARE _id INTEGER DEFAULT NULL;
 
 	DECLARE tabela_cursor CURSOR FOR 
-	SELECT ID_TIME FROM TB_TIME WHERE NM_TIME IN (pListaTimesPreCopa) AND ID_TIME IN (SELECT ID_TIME FROM TB_CAMPEONATO_TIME 
-	WHERE ID_CAMPEONATO = pIdCampCopa AND DS_TIPO NO IN ("'FUT', 'PRO'") ORDER BY NM_TIME;
+	SELECT ID_TIME FROM TB_TIME 
+    WHERE NM_TIME IN (pListaTimesPreCopa) 
+      AND ID_TIME IN (SELECT ID_TIME FROM TB_CAMPEONATO_TIME WHERE ID_CAMPEONATO = pIdCampCopa 
+                                                             AND DS_TIPO NOT IN ('FUT','PRO')) 
+    ORDER BY NM_TIME;
 	
 	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
 
@@ -1228,201 +1165,8 @@ DELIMITER ;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spGenerateCampeonatoUCL_UEL` $$
-CREATE PROCEDURE `spGenerateCampeonatoUCL_UEL`(
-	pIdTemp INTEGER,
-	pTpCamp VARCHAR(4),
-	pDtInicio DATE,
-	pDtSorteio DATE,
-	pNmCamp VARCHAR(50),
-	pQtTimesAcesso INTEGER,
-	pQtTimesRebaix INTEGER,
-	pQtTimes INTEGER,
-	pQtGrupos INTEGER,
-	pQtDiasClassif INTEGER,
-	pQtDiasPlayoff INTEGER,
-	pIdsCampLiga VARCHAR(10),
-	pListaTimesPote VARCHAR(500)
-)
-Begin
-	DECLARE _idCamp INTEGER DEFAULT NULL;
-	DECLARE _count INTEGER DEFAULT 1;
-	
-	SET _idCamp = fcAddNovoCampeonato(pIdTemp, pTpCamp, TRUE);
-	
-	IF (_idCamp>0) THEN
-	
-		UPDATE TB_CAMPEONATO
-		SET NM_CAMPEONATO = pNmCamp,
-		    DT_INICIO = pDtInicio,
-			DT_SORTEIO = pDtSorteio,
-			QT_DIAS_PARTIDA_FASE_MATAxMATA = pQtDiasPlayoff,
-			QT_TIMES_ACESSO = pQtTimesAcesso,
-			QT_DIAS_PARTIDA_CLASSIFICACAO = pQtDiasClassif,
-			QT_TIMES = pQtTimes,
-			QT_TIMES_REBAIXADOS = pQtTimesRebaix,
-			IN_DISPUTA_3o_4o_Lugar = FALSE
-		WHERE ID_CAMPEONATO = _idCamp;
-		
-		DELETE FROM TB_FASE_CAMPEONATO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_GRUPO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_POTE_TIME_GRUPO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_CAMPEONATO_USUARIO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_CAMPEONATO_TIME WHERE ID_CAMPEONATO = _idCamp;
-		
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 0, 1);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 2, 2);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 3, 3);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 4, 4);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 5, 5);
-		
-		WHILE _count <= pQtGrupos DO
-		
-			call `arenafifadb`.`spAddGrupo`(_idCamp, _count, CONCAT("Grupo ", _count));
-		
-			SET _count = _count + 1;
-		
-		END WHILE;
-		
-		call `arenafifadb`.`spAddTecnicosFromLigasToCampeonatoTimeUsuario`(_idCamp, pIdsCampLiga);
-		call `arenafifadb`.`spAddLoadClassificacaoInitialOfCampeonatov2`(_idCamp);
-		
-		IF (pListaTimesPote <> "") THEN
-		
-			call `arenafifadb`.`spAddAllPoteTimeGrupoH2H`(_idCamp, pListaTimesPote);
-		
-		END IF;
-		
-	END IF;
-
-	SELECT _idCamp as idNewCampeonato;
-	
-End$$
-DELIMITER ;
-
-
-
-
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `spGenerateCampeonatoCopaClubes` $$
-CREATE PROCEDURE `spGenerateCampeonatoCopaClubes`(
-	pIdTemp INTEGER,
-	pTpCamp VARCHAR(4),
-	pDtInicio DATE,
-	pDtSorteio DATE,
-	pNmCamp VARCHAR(50),
-	pQtTimesAcesso INTEGER,
-	pQtTimesRebaix INTEGER,
-	pQtTimes INTEGER,
-	pQtDiasClassif INTEGER,
-	pQtDiasPlayoff INTEGER,
-	pIdsCampLiga VARCHAR(10),
-	pListaTimesPreCopa VARCHAR(500)
-)
-Begin
-	DECLARE _idCamp INTEGER DEFAULT NULL;
-	DECLARE _count INTEGER DEFAULT 1;
-	
-	SET _idCamp = fcAddNovoCampeonato(pIdTemp, pTpCamp, FALSE);
-	
-	IF (_idCamp>0) THEN
-	
-		UPDATE TB_CAMPEONATO
-		SET NM_CAMPEONATO = pNmCamp,
-		    DT_INICIO = pDtInicio,
-			DT_SORTEIO = pDtSorteio,
-			QT_DIAS_PARTIDA_FASE_MATAxMATA = pQtDiasPlayoff,
-			QT_TIMES_ACESSO = pQtTimesAcesso,
-			QT_DIAS_PARTIDA_CLASSIFICACAO = pQtDiasClassif,
-			QT_TIMES = pQtTimes,
-			QT_TIMES_REBAIXADOS = pQtTimesRebaix,
-			IN_DISPUTA_3o_4o_Lugar = FALSE
-		WHERE ID_CAMPEONATO = _idCamp;
-		
-		DELETE FROM TB_FASE_CAMPEONATO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_TIMES_FASE_PRECOPA WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_GRUPO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_POTE_TIME_GRUPO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_CAMPEONATO_USUARIO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_CAMPEONATO_TIME WHERE ID_CAMPEONATO = _idCamp;
-		
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp,-1, 0);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 1, 1);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 2, 2);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 3, 3);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 4, 4);
-		INSERT INTO TB_FASE_CAMPEONATO VALUES (_idCamp, 5, 5);
-		
-		call `arenafifadb`.`spAddTecnicosFromLigasToCampeonatoTimeUsuario`(_idCamp, pIdsCampLiga);
-		call `arenafifadb`.`spAddLoadClassificacaoInitialOfCampeonatov2`(_idCamp);
-		
-		IF (pListaTimesPreCopa<>"") THEN
-			call `arenafifadb`.`spAddListaTimesPreCopaH2H`(_idCamp, pListaTimesPreCopa);
-		END IF;
-
-	END IF;
-
-	SELECT _idCamp as idNewCampeonato;
-	
-End$$
-DELIMITER ;
-
-
-
-
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `spGenerateCampeonatoMDL` $$
-CREATE PROCEDURE `spGenerateCampeonatoMDL`(
-	pIdTemp INTEGER,
-	pTpCamp VARCHAR(4),
-	pDtInicio DATE,
-	pDtSorteio DATE,
-	pNmCamp VARCHAR(50),
-	pQtTimesAcesso INTEGER,
-	pQtTimesRebaix INTEGER,
-	pQtTimes INTEGER,
-	pQtDiasClassif INTEGER,
-	pQtDiasPlayoff INTEGER
-)
-Begin
-	DECLARE _idCamp INTEGER DEFAULT NULL;
-	DECLARE _count INTEGER DEFAULT 1;
-	
-	SET _idCamp = fcAddNovoCampeonato(pIdTemp, pTpCamp, FALSE);
-	
-	IF (_idCamp>0) THEN
-	
-		UPDATE TB_CAMPEONATO
-		SET NM_CAMPEONATO = pNmCamp,
-		    DT_INICIO = pDtInicio,
-			DT_SORTEIO = pDtSorteio,
-			QT_DIAS_PARTIDA_FASE_MATAxMATA = pQtDiasPlayoff,
-			QT_TIMES_ACESSO = pQtTimesAcesso,
-			QT_DIAS_PARTIDA_CLASSIFICACAO = pQtDiasClassif,
-			QT_TIMES = pQtTimes,
-			QT_TIMES_REBAIXADOS = pQtTimesRebaix,
-			IN_DISPUTA_3o_4o_Lugar = FALSE
-		WHERE ID_CAMPEONATO = _idCamp;
-		
-		DELETE FROM TB_TIMES_FASE_PRECOPA WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_GRUPO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_POTE_TIME_GRUPO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_CAMPEONATO_USUARIO WHERE ID_CAMPEONATO = _idCamp;
-		DELETE FROM TB_CAMPEONATO_TIME WHERE ID_CAMPEONATO = _idCamp;
-		
-	END IF;
-
-	SELECT _idCamp as idNewCampeonato;
-	
-End$$
-DELIMITER ;
-
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `spRelocationLigasH2H` $$
-CREATE PROCEDURE `spRelocationLigasH2H`(
+DROP PROCEDURE IF EXISTS `spRellocationLigasH2H` $$
+CREATE PROCEDURE `spRellocationLigasH2H`(
 	pIdTemp INTEGER,
 	pIdSerieA INTEGER,
 	pIdSerieB INTEGER,
@@ -1430,14 +1174,14 @@ CREATE PROCEDURE `spRelocationLigasH2H`(
 	pQtLimitMaxLstNegra INTEGER,
 	pCodAcessoTapetao INTEGER,
 	pCodAcesso INTEGER,
-	pCodAcessoRelegated INTEGER,
+	pCodAcessoRelegated INTEGER
 )
 Begin
-	call `arenafifadb`.`spMoveUpDivisionAboveAcesso`(pIdTemp, pIdSerieA, pIdSerieB, "DIV2", pCodAcesso);
-	call `arenafifadb`.`spMoveUpDivisionAboveAcesso`(pIdTemp, pIdSerieB, pIdSerieC, "DIV3", pCodAcesso);
+	call spMoveUpDivisionAboveAcesso(pIdTemp, pIdSerieA, pIdSerieB, "DIV2", pCodAcesso);
+	call spMoveUpDivisionAboveAcesso(pIdTemp, pIdSerieB, pIdSerieC, "DIV3", pCodAcesso);
 	
-	call `arenafifadb`.`spMoveDownDivisionBelowRelegated`(pIdTemp, pIdSerieA, pIdSerieB, "DIV1", pCodAcessoRelegated);
-	call `arenafifadb`.`spMoveDownDivisionBelowRelegated`(pIdTemp, pIdSerieB, pIdSerieC, "DIV2", pCodAcessoRelegated);
+	call spMoveDownDivisionBelowRelegated(pIdTemp, pIdSerieA, pIdSerieB, "DIV1", pCodAcessoRelegated);
+	call spMoveDownDivisionBelowRelegated(pIdTemp, pIdSerieB, pIdSerieC, "DIV2", pCodAcessoRelegated);
 
 	#Retirando técnicos que não renovaram nas Séries
 	DELETE FROM TB_CAMPEONATO_USUARIO WHERE ID_CAMPEONATO IN (pIdSerieA, pIdSerieB, pIdSerieC)

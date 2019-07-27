@@ -5,7 +5,8 @@ using System.Data;
 using System.Net;
 using System.Collections.Generic;
 using static ArenaFifa20.API.NET.Models.GenerateNewSeasonModel;
-                                        
+using System.Configuration;
+
 namespace ArenaFifa20.API.NET.Controllers
 {
     public class GenerateNewSeasonController : ApiController
@@ -21,9 +22,13 @@ namespace ArenaFifa20.API.NET.Controllers
             db.openConnection(GlobalVariables.DATABASE_NAME_STAGING);
             StandardGenerateNewSeasonChampionshipLeagueDetailsModel modelLeague = null;
             StandardGenerateNewSeasonChampionshipCupDetailsModel modelCup = null;
+            GenerateNewSeasonGenerateModel modelGenerate = new GenerateNewSeasonGenerateModel(); ;
             DataTable dt = null;
             int i, j = 0;
             string[] allChampionshipsSelected = { };
+            Boolean VARIABLE_FALSE = false;
+            Boolean VARIABLE_TRUE = true;
+
 
             try
             {
@@ -149,6 +154,303 @@ namespace ArenaFifa20.API.NET.Controllers
                     model.returnMessage = "GenerateNewSeasonSuccessfully";
                     return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
                 }
+                else if (model.actionUser == "validate")
+                {
+                    paramName = new string[] { };
+                    paramValue = new string[] { };
+                    dt = db.executePROC("spValidGenerationNewSeason", paramName, paramValue);
+
+                    modelGenerate.DatabasesLookTheSame = false;
+                    modelGenerate.NewSeasonIsGenerated = false;
+                    modelGenerate.hasEuroCup = false;
+                    modelGenerate.hasEuropeLeague = false;
+                    modelGenerate.hasSerieB_FUT = false;
+                    modelGenerate.hasSerieB_PRO = false;
+                    modelGenerate.hasSerieD_H2H = false;
+                    modelGenerate.hasWorldCup = false;
+
+                    if (dt.Rows[0]["databasesLookTheSame"].ToString() == "1")
+                        modelGenerate.DatabasesLookTheSame = true;
+
+                    if (dt.Rows[0]["generateNewSeasonIsDone"].ToString() == "1")
+                        modelGenerate.NewSeasonIsGenerated = true;
+
+                    if (dt.Rows[0]["hasWorldCup"].ToString() == "1")
+                        modelGenerate.hasWorldCup = true;
+
+                    if (dt.Rows[0]["hasEuroCup"].ToString() == "1")
+                        modelGenerate.hasEuroCup = true;
+
+                    if (dt.Rows[0]["hasSerieD_H2H"].ToString() == "1")
+                        modelGenerate.hasSerieD_H2H = true;
+
+                    if (dt.Rows[0]["hasSerieB_FUT"].ToString() == "1")
+                        modelGenerate.hasSerieB_FUT = true;
+
+                    if (dt.Rows[0]["hasSerieB_PRO"].ToString() == "1")
+                        modelGenerate.hasSerieB_PRO = true;
+
+                    if (dt.Rows[0]["hasEuroLeague"].ToString() == "1")
+                        modelGenerate.hasEuropeLeague = true;
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "prepare-database-bkp")
+                {
+                    paramName = new string[] { };
+                    paramValue = new string[] { };
+                    dt = db.executePROC("spPrepareDatabaseBKPToNegerateNewSeason", paramName, paramValue);
+
+                    modelGenerate.DatabasesLookTheSame = true;
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "prepare-generate")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { };
+                    paramValue = new string[] { };
+                    dt = db.executePROC("spInitializeProxTemporada", paramName, paramValue);
+
+                    modelGenerate.currentSeasonID = Convert.ToInt16(dt.Rows[0]["PreviousTemporadaID"].ToString());
+                    modelGenerate.preparationBkpDatabaseIsDone = true;
+
+                    //Today (23/07/19) we don't keep more the match comments
+                    modelGenerate.preparationCommentDatabaseIsDone = true;
+
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-calculate-season-h2h")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { "pIdTemp" };
+                    paramValue = new string[] { modelGenerate.currentSeasonID.ToString() };
+                    dt = db.executePROC("spCalculateEndOfTemporadaH2H", paramName, paramValue);
+
+                    modelGenerate.seasonID = Convert.ToInt16(dt.Rows[0]["NewTemporadaID"].ToString());
+                    modelGenerate.seasonName = dt.Rows[0]["NewTemporadaName"].ToString();
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-calculate-season-fut")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { "pIdTemp", "pIdNewTemp" };
+                    paramValue = new string[] { modelGenerate.currentSeasonID.ToString(), modelGenerate.seasonID.ToString() };
+                    db.executePROCNonResult("spCalculateEndOfTemporadaFUT", paramName, paramValue);
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-calculate-season-pro")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { "pIdTemp", "pIdNewTemp" };
+                    paramValue = new string[] { modelGenerate.currentSeasonID.ToString(), modelGenerate.seasonID.ToString() };
+                    db.executePROCNonResult("spCalculateEndOfTemporadaPRO", paramName, paramValue);
+
+                    modelGenerate.calculateEndOfSeasonIsDone = true;
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-championships-league-h2h")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "SERIE_A", "DIV1", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.serieAID_H2H = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.serieAID_H2H > 0) { modelGenerate.serieAIsGenerated_H2H = true; }
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "SERIE_B", "DIV2", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.serieBID_H2H = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.serieBID_H2H > 0) { modelGenerate.serieBIsGenerated_H2H = true; }
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "SERIE_C", "DIV3", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.serieCID_H2H = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.serieCID_H2H > 0) { modelGenerate.serieCIsGenerated_H2H = true; }
+
+                    modelGenerate.serieDID_H2H = 0;
+                    if (modelGenerate.hasSerieD_H2H)
+                    {
+                        paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                        paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "SERIE_D", "DIV4", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                        dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                        modelGenerate.serieDID_H2H = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                        if (modelGenerate.serieDID_H2H > 0) { modelGenerate.serieDIsGenerated_H2H = true; }
+                    }
+
+                    paramName = new string[] { "pIdTemp", "pIdSerieA", "pIdSerieB", "pIdSerieC", "pIdSerieD", "pQtLimitMaxLstNegra", "pCodAcessoTapetao",
+                                               "pCodAcesso", "pCodAcessoRelegated", "pCodAcessoInvited" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), modelGenerate.serieAID_H2H.ToString(), modelGenerate.serieBID_H2H.ToString(),
+                                                modelGenerate.serieCID_H2H.ToString(), modelGenerate.serieDID_H2H.ToString(), 
+                                                ConfigurationManager.AppSettings["renewal.total.limit.blackList"].ToString(), ConfigurationManager.AppSettings["access.current.season.access.direct"].ToString(),
+                                                ConfigurationManager.AppSettings["access.current.season.access"].ToString(), ConfigurationManager.AppSettings["access.current.season.access"].ToString(),
+                                                ConfigurationManager.AppSettings["access.current.season.invite"].ToString()};
+                    dt = db.executePROC("spRellocationLigasH2H", paramName, paramValue);
+                    modelGenerate.rellocationOfSeries_H2H = true;
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-championships-cup-h2h")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    modelGenerate.worldCupID_H2H = 0;
+                    if (modelGenerate.hasWorldCup)
+                    {
+                        paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                        paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "WORLDCP", "CPDM", VARIABLE_TRUE.ToString() + ";[BOOLEAN-TYPE]" };
+                        dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                        modelGenerate.worldCupID_H2H = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                        if (modelGenerate.worldCupID_H2H > 0) { modelGenerate.worldCupIsGenerated = true; }
+                    }
+
+                    modelGenerate.euroCupID_H2H = 0;
+                    if (modelGenerate.hasEuroCup)
+                    {
+                        paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                        paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "EUROCUP", "ERCP", VARIABLE_TRUE.ToString() + ";[BOOLEAN-TYPE]" };
+                        dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                        modelGenerate.euroCupID_H2H = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                        if (modelGenerate.euroCupID_H2H > 0) { modelGenerate.euroCupIsGenerated = true; }
+                    }
+
+
+
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "CHAMPLG", "CPGL", VARIABLE_TRUE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.championsLeagueID = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.championsLeagueID > 0) { modelGenerate.championsLeagueIsGenerated = true; }
+
+                    modelGenerate.europeLeagueID = 0;
+                    if (modelGenerate.hasEuropeLeague)
+                    {
+                        paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                        paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "EUROPLG", "CPSA", VARIABLE_TRUE.ToString() + ";[BOOLEAN-TYPE]" };
+                        dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                        modelGenerate.europeLeagueID = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                        if (modelGenerate.europeLeagueID > 0) { modelGenerate.europeLeagueIsGenerated = true; }
+                    }
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "H2H", "UEFACUP", "CPGL", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.uefaCupID = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.uefaCupID > 0) { modelGenerate.uefaCupIsGenerated = true; }
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-championships-fut")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "FUT", "SERIE_A", "FUT1", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.serieAID_FUT = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.serieAID_FUT > 0) { modelGenerate.serieAIsGenerated_FUT = true; }
+
+                    modelGenerate.serieBID_FUT = 0;
+                    if (modelGenerate.hasSerieB_FUT)
+                    {
+                        paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                        paramValue = new string[] { modelGenerate.seasonID.ToString(), "FUT", "SERIE_B", "FUT2", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                        dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                        modelGenerate.serieBID_FUT = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                        if (modelGenerate.serieBID_FUT > 0) { modelGenerate.serieBIsGenerated_FUT = true; }
+                    }
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "FUT", "FUT-CUP", "CFUT", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.futCupID = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.futCupID > 0) { modelGenerate.futCupIsGenerated = true; }
+
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-championships-pro")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "PRO", "SERIE_A", "PRO1", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.serieAID_PRO = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.serieAID_PRO > 0) { modelGenerate.serieAIsGenerated_PRO = true; }
+
+                    modelGenerate.serieBID_PRO = 0;
+                    if (modelGenerate.hasSerieB_PRO)
+                    {
+                        paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                        paramValue = new string[] { modelGenerate.seasonID.ToString(), "PRO", "SERIE_B", "PRO2", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                        dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                        modelGenerate.serieBID_PRO = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                        if (modelGenerate.serieBID_PRO > 0) { modelGenerate.serieBIsGenerated_PRO = true; }
+                    }
+
+                    paramName = new string[] { "pIdTemp", "pTpModalidade", "pSgCampeonato", "pTpCamp", "pByGroup" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), "PRO", "PRO-CUP", "CPRO", VARIABLE_FALSE.ToString() + ";[BOOLEAN-TYPE]" };
+                    dt = db.executePROC("spAddNewChampionship", paramName, paramValue);
+                    modelGenerate.proCupID = Convert.ToInt16(dt.Rows[0]["idCampNew"].ToString());
+                    if (modelGenerate.proCupID > 0) { modelGenerate.proCupIsGenerated = true; }
+
+
+
+                    paramName = new string[] { "pIdTemp", "pIdCamp" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), modelGenerate.proCupID.ToString() };
+                    dt = db.executePROC("spSubscriptionPlayersForPROCLUB", paramName, paramValue);
+                    modelGenerate.validationSquadOfProClubIsDone = true;
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
+                else if (model.actionUser == "generate-maintenance")
+                {
+                    modelGenerate = model.newSeasonModel;
+
+                    paramName = new string[] { "pIdTemp", "pIdSerieA", "pIdSerieB", "pIdSerieC", "pIdSerieD", "pIdFutA", "pIdFutB", "pIdProA", "pIdProB" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), modelGenerate.serieAID_H2H.ToString(), modelGenerate.serieBID_H2H.ToString(),
+                                                modelGenerate.serieCID_H2H.ToString(), modelGenerate.serieDID_H2H.ToString(), modelGenerate.serieAID_FUT.ToString(),
+                                                modelGenerate.serieBID_FUT.ToString(), modelGenerate.serieAID_PRO.ToString(), modelGenerate.serieBID_PRO.ToString() };
+                    dt = db.executePROC("spMaintenanceBancoAndManagers", paramName, paramValue);
+                    modelGenerate.maintenanceOfBenchIsDone = true;
+
+                    paramName = new string[] { "pIdTemp" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString() };
+                    dt = db.executePROC("spGenerateClashesNewTemporada", paramName, paramValue);
+                    modelGenerate.tableOfClashesIsDone = true;
+
+                    paramName = new string[] { "pIdTemp", "pIdSerieA" };
+                    paramValue = new string[] { modelGenerate.seasonID.ToString(), modelGenerate.serieAID_H2H.ToString() };
+                    dt = db.executePROC("spDeleteAllTablesForNewTemporada", paramName, paramValue);
+                    modelGenerate.purgingOfSystemTablesIsDone = true;
+                    modelGenerate.NewSeasonIsGenerated = true;
+
+                    modelGenerate.returnMessage = "GenerateNewSeasonSuccessfully";
+                    return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
+                }
                 else
                 {
                     return StatusCode(HttpStatusCode.NotAcceptable);
@@ -157,8 +459,8 @@ namespace ArenaFifa20.API.NET.Controllers
             }
             catch (Exception ex)
             {
-                model.returnMessage = "error_" + ex.Message;
-                return CreatedAtRoute("DefaultApi", new { id = 0 }, model);
+                modelGenerate.returnMessage = "error_" + ex.Message;
+                return CreatedAtRoute("DefaultApi", new { id = 0 }, modelGenerate);
             }
             finally
             {
@@ -166,6 +468,7 @@ namespace ArenaFifa20.API.NET.Controllers
                 dt = null;
                 modelLeague = null;
                 modelCup = null;
+                modelGenerate = null;
             }
 
         }

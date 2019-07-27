@@ -2,20 +2,13 @@ USE `arenafifadb_staging`;
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS `spCalculateEndOfTemporadaFUT` $$
-CREATE PROCEDURE `spCalculateEndOfTemporadaFUT`(pIdTemp INTEGER, pDataInicio DATE)
+DROP PROCEDURE IF EXISTS `spCalculateEndOfTemporadaPRO` $$
+CREATE PROCEDURE `spCalculateEndOfTemporadaPRO`(pIdTemp INTEGER, pIdNewTemp INTEGER)
 Begin
-	DECLARE _idNewTemp INTEGER DEFAULT NULL;
-
 	UPDATE TB_CAMPEONATO SET IN_CAMPEONATO_ATIVO = FALSE 
 	WHERE SG_TIPO_CAMPEONATO IN ("PRO1", "PRO2", "CPRO") AND IN_CAMPEONATO_ATIVO = TRUE;
 	
-	SET _idNewTemp = spAddNewTemporadaByFimOldOne(CONCAT(pIdTemp, " º Temporada"), pDataInicio);
-	
-	call `arenafifadb_staging`.`spCalculateAllFasesEndOfTemporadaPRO`(pIdTemp, _idNewTemp);
-	
-	SELECT _idNewTemp as NewTemporada;
-
+	call spCalculateAllFasesEndOfTemporadaPRO(pIdTemp, pIdNewTemp);
 End$$
 DELIMITER ;
 
@@ -26,8 +19,8 @@ DROP PROCEDURE IF EXISTS `spCalculateAllFasesEndOfTemporadaPRO` $$
 CREATE PROCEDURE `spCalculateAllFasesEndOfTemporadaPRO`(pIdTemp INTEGER, pIdTempNew INTEGER)
 Begin
 	DECLARE _finished INTEGER DEFAULT 0;
-	DECLARE _sgCamps VARCHAR(50) DEFAULT "'PRO1','PRO2','CPRO'";
-	DECLARE _sgLigas VARCHAR(50) DEFAULT "'PRO1','PRO2'";
+	DECLARE _sgCamps VARCHAR(50) DEFAULT "PRO1,PRO2,CPRO";
+	DECLARE _sgLigas VARCHAR(50) DEFAULT "PRO1,PRO2'";
 	DECLARE _sgCamp VARCHAR(4) DEFAULT NULL;
 	DECLARE _count INTEGER DEFAULT 0;
 	DECLARE _idCamp INTEGER DEFAULT 0;
@@ -36,6 +29,8 @@ Begin
 	DECLARE _ptsEmpate INTEGER DEFAULT NULL;
 	DECLARE _idUsuHome INTEGER DEFAULT NULL;
 	DECLARE _idUsuAway INTEGER DEFAULT NULL;
+	DECLARE _idTeamHome INTEGER DEFAULT NULL;
+	DECLARE _idTeamAway INTEGER DEFAULT NULL;
 	DECLARE _qtGolsHome INTEGER DEFAULT NULL;
 	DECLARE _qtGolsAway INTEGER DEFAULT NULL;
 	DECLARE _sumPoints INTEGER DEFAULT 0;
@@ -47,11 +42,11 @@ Begin
 
 	#Calculando as Fases de Classificação....
 	DECLARE tabela_cursor CURSOR FOR
-		SELECT J.ID_CAMPEONATO, J.ID_USUARIO_TIME_CASA, J.ID_USUARIO_TIME_VISITANTE, J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, C.SG_TIPO_CAMPEONATO 
+		SELECT J.ID_CAMPEONATO, J.ID_TIME_CASA, J.ID_USUARIO_TIME_CASA, J.ID_TIME_VISITANTE, J.ID_USUARIO_TIME_VISITANTE, J.QT_GOLS_TIME_CASA, J.QT_GOLS_TIME_VISITANTE, C.SG_TIPO_CAMPEONATO 
 		FROM TB_TABELA_JOGO J, TB_TIME T1 , TB_TIME T2, TB_USUARIO TU1, TB_USUARIO TU2, TB_CLASSIFICACAO TC1, TB_CLASSIFICACAO TC2, TB_CAMPEONATO C 
 		WHERE C.ID_TEMPORADA = pIdTemp
 		AND J.ID_FASE = 0
-		AND C.SG_TIPO_CAMPEONATO IN (_sgCamps)
+		AND FIND_IN_SET(C.SG_TIPO_CAMPEONATO, _sgCamps) > 0
 		AND C.ID_CAMPEONATO = J.ID_CAMPEONATO 
 		AND C.ID_CAMPEONATO = TC1.ID_CAMPEONATO 
 		AND C.ID_CAMPEONATO = TC2.ID_CAMPEONATO 
@@ -76,7 +71,7 @@ Begin
 	
 	get_tabela: LOOP
 	
-		FETCH tabela_cursor INTO _idCamp, _idUsuHome, _idUsuAway, _qtGolsHome, _qtGolsAway, _sgCamp;
+		FETCH tabela_cursor INTO _idCamp, _idTeamHome, _idUsuHome, _idTeamAway, _idUsuAway, _qtGolsHome, _qtGolsAway, _sgCamp;
 		
 		IF _finished = 1 THEN
 			LEAVE get_tabela;
@@ -95,9 +90,9 @@ Begin
 		END IF;
 		
 		
-		SELECT count(1) into _count FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _idUsuHome;
+		SELECT count(1) into _count FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = pIdTemp AND ID_TIME = _idTeamHome;
 		IF _count = 0 THEN
-			call `arenafifadb_staging`.`spAddHistoricoTemporadaPRO`(pIdTemp, _idUsuHome, NULL);
+			call spAddHistoricoTemporadaPRO(pIdTemp, _idTeamHome, _idUsuHome, NULL);
 		END IF;
 	
 		SET _sumPoints = 0;
@@ -115,13 +110,13 @@ Begin
 		SET _sumLiga = 0;
 		SET _sumCopa = 0;
 		
-		IF _sgCamp IN (_sgLigasH2H) THEN
+		IF INSTR(_sgLigas,_sgCamp)> 0  THEN
 			SET _sumLiga = _sumPoints;
 		ELSE
 			SET _sumCopa = _sumPoints;
 		END IF;
 		
-		UPDATE TB_HISTORICO_TEMPORADA_FUT
+		UPDATE TB_HISTORICO_TEMPORADA_PRO
 		SET PT_EMPATES_FASE1 = (PT_EMPATES_FASE1+_sumEmpate),
 		    PT_VITORIAS_FASE1 = (PT_VITORIAS_FASE1+_sumVitoria),
 			PT_COPAS = (PT_COPAS+_sumCopa),
@@ -129,9 +124,9 @@ Begin
 		WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _idUsuHome;
 
 
-		SELECT count(1) into _count FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _idUsuAway;
+		SELECT count(1) into _count FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = pIdTemp AND ID_TIME = _idTeamAway;
 		IF _count = 0 THEN
-			call `arenafifadb_staging`.`spAddHistoricoTemporadaPRO`(pIdTemp, _idUsuAway, NULL);
+			call spAddHistoricoTemporadaPRO(pIdTemp, _idTeamAway, _idUsuAway, NULL);
 		END IF;
 		
 		SET _sumPoints = 0;
@@ -149,7 +144,7 @@ Begin
 		SET _sumLiga = 0;
 		SET _sumCopa = 0;
 		
-		IF _sgCamp IN (_sgLigasH2H) THEN
+		IF INSTR(_sgLigas,_sgCamp)> 0  THEN
 			SET _sumLiga = _sumPoints;
 		ELSE
 			SET _sumCopa = _sumPoints;
@@ -167,7 +162,7 @@ Begin
 	CLOSE tabela_cursor;
 	
 	#Calculando fases playoff....
-	call `arenafifadb_staging`.`spCalculateFasePlayoffFUT_PRO`(pIdTemp, _sgCamps, _sgLigas, "PRO");
+	call spCalculateFasePlayoffFUT_PRO(pIdTemp, _sgCamps, _sgLigas, "PRO");
 
 End$$
 DELIMITER ;
@@ -211,33 +206,10 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS `spAddElencoPROProxTemp` $$
 CREATE PROCEDURE `spAddElencoPROProxTemp`(pIdTemp INTEGER, pIdUsuManager INTEGER, pIdTime INTEGER)
 Begin
-	DECLARE _idUsu INTEGER DEFAULT NULL;
-	DECLARE _finished INTEGER DEFAULT 0;
-
-	DECLARE tabela_cursor CURSOR FOR
-		SELECT ID_USUARIO FROM TB_GOLEADOR
+	insert into TB_CONFIRM_ELENCO_PRO
+		SELECT pIdTemp, pIdUsuManager, ID_USUARIO, NOW() FROM TB_GOLEADOR
 		WHERE ID_TIME = pIdTime
 		ORDER BY ID_USUARIO;
-	
-	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
-	
-	OPEN tabela_cursor;
-	
-	get_tabela: LOOP
-	
-		FETCH tabela_cursor INTO _idUsu;
-		
-		IF _finished = 1 THEN
-			LEAVE get_tabela;
-		END IF;
-
-		insert into TB_CONFIRM_ELENCO_PRO (ID_TEMPORADA, ID_USUARIO_MANAGER, ID_USUARIO, DT_CONFIRMACAO)
-		values (pIdTemp, pIdUsuManager, _idUsu, NOW());
-
-	END LOOP get_tabela;
-	
-	CLOSE tabela_cursor;
-	
 End$$
 DELIMITER ;
 
@@ -377,37 +349,18 @@ CREATE PROCEDURE `spSubscriptionPlayersForPROCLUB`(
 )
 Begin
 	DECLARE _IdPlayerInitial INTEGER DEFAULT 999000;
-	DECLARE _idUsuManager INTEGER DEFAULT NULL;
-	DECLARE _idUsu INTEGER DEFAULT NULL;
-	DECLARE _NmUsu VARCHAR(50) DEFAULT NULL;
-	DECLARE _IdPsn VARCHAR(30) DEFAULT NULL;
-	DECLARE _finished INTEGER DEFAULT 0;
-	DECLARE _countTecnicos INTEGER DEFAULT 0;
-	
-	DECLARE tabela_cursor CURSOR FOR 
-	SELECT C.ID_USUARIO_MANAGER, C.ID_USUARIO, U.NM_USUARIO, U.PSN_ID FROM TB_CONFIRM_ELENCO_PRO C, TB_USUARIO U WHERE C.ID_TEMPORADA = pIdTemp
-	AND C.ID_USUARIO_MANAGER IN (SELECT CU.ID_USUARIO FROM TB_CAMPEONATO_USUARIO CU WHERE CU.ID_CAMPEONATO = pIdCamp)
-	AND C.ID_USUARIO = U.ID_USUARIO ORDER BY C.ID_USUARIO_MANAGER, C.ID_USUARIO;
-	
-	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
 
-	OPEN tabela_cursor;
-	
-	get_tabela: LOOP
-	
-		FETCH tabela_cursor INTO _idUsuManager, _idUsu, _NmUsu, _IdPsn;
-		
-		IF _finished = 1 THEN
-			LEAVE get_tabela;
-		END IF;
-		
-		call `arenafifadb_staging`.`spAddGoleador`(_IdPlayerInitial, fcGetCurrentIdTimePRO(_idUsuManager), _IdPsn, _NmUsu, "...", "PRO CLUB", 0, _idUsu);
-		
-		SET _IdPlayerInitial = _IdPlayerInitial + 1;
+	DELETE FROM TB_GOLEADOR WHERE ID_GOLEADOR > 0;
 
-	END LOOP get_tabela;
-	
-	CLOSE tabela_cursor;
+	SET @row_number = _IdPlayerInitial;
+
+	INSERT INTO TB_GOLEADOR
+	SELECT (@row_number:=@row_number + 1), fcGetCurrentIdTimePRO(C.ID_USUARIO_MANAGER), U.PSN_ID, U.NM_USUARIO, "...", "PRO CLUB", 0, 0, C.ID_USUARIO, NOW()
+	FROM TB_CONFIRM_ELENCO_PRO C, TB_USUARIO U
+	WHERE C.ID_TEMPORADA = pIdTemp
+	  AND C.ID_USUARIO_MANAGER IN (SELECT CU.ID_USUARIO FROM TB_CAMPEONATO_USUARIO CU WHERE CU.ID_CAMPEONATO = pIdCamp)
+	  AND C.ID_USUARIO = U.ID_USUARIO ORDER BY C.ID_USUARIO_MANAGER, C.ID_USUARIO;
+
 End$$
 DELIMITER ;
 
@@ -470,12 +423,13 @@ CREATE PROCEDURE `spPrepareToCalculatePerformanceTecnicosPRO`(
 Begin
 	DECLARE _finished INTEGER DEFAULT 0;
 	DECLARE _idUsu INTEGER DEFAULT 0;
+	DECLARE _idTime INTEGER DEFAULT 0;
 	DECLARE _totPontos INTEGER DEFAULT 0;
 	DECLARE _totTemp INTEGER DEFAULT 0;
 	DECLARE _totPreviusTemp INTEGER DEFAULT 0;
 
 	DECLARE tabela_cursor CURSOR FOR
-		SELECT ID_USUARIO, PT_TOTAL_TEMPORADA FROM TB_HISTORICO_TEMPORADA_PRO  WHERE ID_TEMPORADA = pIdTemp ORDER BY ID_USUARIO;
+		SELECT ID_TIME, ID_USUARIO, PT_TOTAL_TEMPORADA FROM TB_HISTORICO_TEMPORADA_PRO  WHERE ID_TEMPORADA = pIdTemp ORDER BY ID_TIME;
  
 	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
 	
@@ -483,21 +437,21 @@ Begin
 	
 	get_tabela: LOOP
 	
-		FETCH tabela_cursor INTO _idUsu, _totTemp;
+		FETCH tabela_cursor INTO _idTime, _idUsu, _totTemp;
 		
 		IF _finished = 1 THEN
 			LEAVE get_tabela;
 		END IF;
 		
-		SELECT PT_TOTAL into _totPreviusTemp FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = pIdPreviousTemp AND ID_USUARIO = pIdUsu;
+		SELECT PT_TOTAL into _totPreviusTemp FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = pIdPreviousTemp AND ID_TIME = _idTime;
 		IF _totPreviusTemp IS NULL THEN
 			UPDATE TB_HISTORICO_TEMPORADA_PRO
-			SET PT_TOTAL_TEMPORADA_ANTERIOR = PT_TOTAL_TEMPORADA
-			WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = pIdUsu;
+			SET PT_TOTAL_TEMPORADA_ANTERIOR = PT_TOTAL_TEMPORADA, ID_USUARIO = _idUsu
+			WHERE ID_TEMPORADA = pIdTemp AND ID_TIME = _idTime;
 		ELSE
 			UPDATE TB_HISTORICO_TEMPORADA_PRO
-			SET PT_TOTAL_TEMPORADA_ANTERIOR = _totPreviusTemp, PT_TOTAL = (PT_TOTAL+_totPreviusTemp)
-			WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = pIdUsu;
+			SET PT_TOTAL_TEMPORADA_ANTERIOR = _totPreviusTemp, PT_TOTAL = (PT_TOTAL+_totPreviusTemp), ID_USUARIO = _idUsu
+			WHERE ID_TEMPORADA = pIdTemp AND ID_TIME = _idTime;
 		END IF;
 		
 		call `arenafifadb_staging`.`spCalculatePerformanceTecnicosFUT_PRO`(pIdTemp, _idUsu, pSgLigas, "PRO");
@@ -521,15 +475,16 @@ CREATE PROCEDURE `spAddAllTecnicosHistoricoTemporadaPRO`(
 Begin
 	DECLARE _finished INTEGER DEFAULT 0;
 	DECLARE _idUsu INTEGER DEFAULT 0;
+	DECLARE _idTime INTEGER DEFAULT 0;
 	DECLARE _idTemp INTEGER DEFAULT 0;
 	DECLARE _total INTEGER DEFAULT 0;
 	DECLARE _totLstNegra INTEGER DEFAULT 0;
 	DECLARE _apGeral DECIMAL(5,2) DEFAULT 0;
 
 	DECLARE tabela_cursor CURSOR FOR
-		SELECT ID_USUARIO, max(ID_TEMPORADA) FROM TB_HISTORICO_TEMPORADA_PRO
-		WHERE ID_USUARIO NOT IN (SELECT ID_USUARIO FROM TB_HISTORICO_TEMPORADA WHERE ID_Temporada = pIdTemp)
-		GROUP BY ID_USUARIO;
+		SELECT ID_TIME, max(ID_TEMPORADA) FROM TB_HISTORICO_TEMPORADA_PRO
+		WHERE ID_TIME NOT IN (SELECT ID_TIME FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_Temporada = pIdTemp)
+		GROUP BY ID_TIME;
  
 	DECLARE CONTINUE HANDLER FOR NOT FOUND SET _finished = 1;
 	
@@ -537,21 +492,34 @@ Begin
 	
 	get_tabela: LOOP
 	
-		FETCH tabela_cursor INTO _idUsu, _idTemp;
+		FETCH tabela_cursor INTO _idTime, _idTemp;
 		
 		IF _finished = 1 THEN
 			LEAVE get_tabela;
 		END IF;
 		
-		SELECT PT_TOTAL, PC_APROVEITAMENTO_GERAL, QT_LSTNEGRA into _total, _apGeral, _totLstNegra
-		FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = _idTemp AND ID_USUARIO = _idUsu;
-		
-		call `arenafifadb_staging`.`spAddHistoricoTemporadaPRO`(pIdTemp, _idUsu, 0);
+		SELECT ID_USUARIO, PT_TOTAL, PC_APROVEITAMENTO_GERAL, QT_LSTNEGRA into _idUsu, _total, _apGeral, _totLstNegra
+		FROM TB_HISTORICO_TEMPORADA_PRO WHERE ID_TEMPORADA = _idTemp AND ID_TIME = _idTime;
 		
 		IF (_total IS NOT NULL) THEN
+
 			UPDATE TB_HISTORICO_TEMPORADA_PRO
-			SET PT_TOTAL = _total, PC_APROVEITAMENTO_GERAL = _apGeral, QT_LSTNEGRA = _totLstNegra
-			WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _idUsu;
+			SET PT_TOTAL = _total, PC_APROVEITAMENTO_GERAL = _apGeral, QT_LSTNEGRA = _totLstNegra, IN_ACESSO_TEMP_ATUAL = 0
+			WHERE ID_TEMPORADA = pIdTemp AND ID_TIME = _idTime;
+		
+		ELSE
+		
+			INSERT INTO TB_HISTORICO_TEMPORADA_PRO (ID_TEMPORADA, ID_TIME, ID_USUARIO, IN_ACESSO_TEMP_ATUAL, PT_CAMPEAO, PT_VICECAMPEAO, PT_SEMIS, PT_QUARTAS, PT_OITAVAS, PT_CLASSIF_FASE2, 
+												PT_VITORIAS_FASE1, PT_EMPATES_FASE1, IN_POSICAO_ATUAL, PT_LIGAS, PT_COPAS, PT_TOTAL_TEMPORADA, QT_JOGOS_TEMPORADA, 
+												QT_TOTAL_PONTOS_TEMPORADA, QT_TOTAL_VITORIAS_TEMPORADA, QT_TOTAL_EMPATES_TEMPORADA, PC_APROVEITAMENTO_TEMPORADAS, 
+												IN_REBAIXADO_TEMP_ANTERIOR, QT_LSTNEGRA, PT_TOTAL, PT_TOTAL_TEMPORADA_ANTERIOR, IN_POSICAO_ANTERIOR, 
+												QT_JOGOS_GERAL, QT_TOTAL_PONTOS_GERAL, QT_TOTAL_VITORIAS_GERAL, QT_TOTAL_EMPATES_GERAL, PC_APROVEITAMENTO_GERAL)
+			SELECT pIdTemp, _idTime, _idUsu, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, COALESCE(T.PT_TOTAL,0), COALESCE(T.PT_TOTAL_TEMPORADA_ANTERIOR,0), 
+			       COALESCE(T.IN_POSICAO_ANTERIOR,0), COALESCE(T.QT_JOGOS_GERAL,0), COALESCE(T.QT_TOTAL_PONTOS_GERAL,0), COALESCE(T.QT_TOTAL_VITORIAS_GERAL,0), 
+				   COALESCE(T.QT_TOTAL_EMPATES_GERAL,0), COALESCE(T.PC_APROVEITAMENTO_GERAL,0)
+			FROM TB_HISTORICO_TEMPORADA_PRO T
+			WHERE T.ID_TEMPORADA < pIdTemp AND T.ID_TIME = _idTime ORDER BY T.ID_TEMPORADA DESC limit 1;
+			
 		END IF;
 		
 	END LOOP get_tabela;
@@ -624,7 +592,7 @@ Begin
 		
 		END IF;
 		
-		SELECT PT_TOTAL into  FROM TB_LISTA_NEGRA 
+		SELECT PT_TOTAL into _qtLstNegra FROM TB_LISTA_NEGRA 
 		WHERE ID_TEMPORADA = pIdTemp AND ID_USUARIO = _IdUsu;
 		
 		IF _qtLstNegra IS NULL THEN
